@@ -1,0 +1,6 @@
+# CT-10 golden program: y = 2x + 5 - z
+# START 0x000
+20 20 60 20 60 23 68 22 48 21 98 00
+@20
+04 00 01 05
+# EXPECT 0x21 0x0C
