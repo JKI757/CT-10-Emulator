@@ -1,59 +1,130 @@
 # CT-10 (COM-TRAN TEN) Emulator
 
-This repo builds a museum-grade emulator of the Digiac COM-TRAN TEN (CT-10) training
-computer, with a full front panel, cycle-accurate timing, and a hardware-faithful core
-simulation. The emulator is a behavioral digital twin rather than a high-level CPU model.
+This repository builds an emulator of the Digiac COM-TRAN TEN (CT-10).
 
-## Historical context (from Docs/)
+The CT-10 was a training device. It existed solely to teach digital computer fundamentals and Navy-specific maintenance concepts to enlisted technical personnel.
 
-- Navy training at Great Lakes: "COM-TRAN TEN Logic Diagrams for Combat Systems Advanced
-  Digital A-100-0142 (Volume 4)" prepared by Service School Command, Great Lakes, IL
-  (Sept 1995) for the Chief of Naval Education and Training.
-- Navy Data Systems Technician training at Mare Island: "Student Guide for Data Systems
-  Technician Class A Phase Two A-150-0025 Volume II (Part 3)" prepared by Combat Systems
-  Technical Schools Command, Mare Island, California (01 Apr 1991).
-- Earlier Air Force training use: "Electronic Computer and Switching Systems Specialist:
-  Computer Units and COM-TRAN 10" (June 1981) from USAF Technical Training School,
-  3380th Technical Training Group, Keesler Air Force Base, Mississippi.
+This emulator reproduces the original front panel, instruction timing, and internal data paths with high fidelity. It is a **behavioral digital twin**, not a high-level or abstract CPU model.
 
-Sources: `Docs/Historical/comtran10.pdf`,
-`Docs/Historical/KDA-3032_Digiac_COM-TRAN_TEN_Training_Jun81 ct10 ct-10.pdf`,
-`Docs/Historical/COM-TRAN10a.jpg`.
+This project is **Part 1** of a longer series of tools intended to emulate historic military computing and training systems as accurately as possible using publicly available training sources.
 
-## Navy DS rating notes
+---
 
-- TODO: Fill in DS rating history with official Navy sources.
+## Project scope and long-term intent
+
+The CT-10 emulator is the first in a planned series whose goals are:
+
+- Preservation of historically significant military training computers.
+- Museum-quality demonstration and education.
+- Faithful reconstruction of registers, buses, clocks, and execution phases.
+
+No proprietary firmware or restricted technical manauls are used.
+
+---
+
+## Historical context
+
+The Digiac COM-TRAN TEN was designed and sold as an **educational and training computer**. Within the U.S. military, it was used to support the transition from analog and electromechanical control systems to digital computers.
+
+Documented usage includes:
+
+- **U.S. Navy enlisted technical training**, particularly for the Data Systems Technician (DS) rating.
+- **U.S. Air Force technical training**, earlier in the system’s service life.
+
+The CT-10 was not connected to operational combat systems and did not process live tactical data. Its value was pedagogical.
+
+Primary training and reference material includes:
+
+- *COM-TRAN TEN Logic Diagrams for Combat Systems Advanced Digital A-100-0142 (Volume 4)*, Service School Command, Great Lakes, Illinois, prepared for the Chief of Naval Education and Training (September 1995).
+- *Student Guide for Data Systems Technician Class A Phase Two A-150-0025, Volume II (Part 3)*, Combat Systems Technical Schools Command, Mare Island, California (01 April 1991).
+- *Electronic Computer and Switching Systems Specialist: Computer Units and COM-TRAN 10*, USAF Technical Training School, 3380th Technical Training Group, Keesler Air Force Base (June 1981).
+
+Source copies are preserved in `Docs/Historical/`.
+
+---
+
+## U.S. Navy Data Systems Technician (DS) rating history
+
+The **Data Systems Technician (DS)** rating was established by the U.S. Navy in **1965** to support the rapid introduction of digital computers into combat systems, command-and-control, and weapons coordination.  It was disestablished in 1998 and its members were split between the Electronics Technician (ET) and Fire Controlman (FC) ratings.  The vast majority of those who worked on combat systems computing were converted to FC.  
+
+### Origins
+
+The DS rating consolidated responsibilities previously spread across electronics and fire control specialties. Early DS sailors were trained to maintain, troubleshoot, and align digital computers used in naval tactical systems.
+
+Training emphasized:
+
+- Digital logic and arithmetic
+- Memory systems
+- Timing and synchronization
+- Input/output devices
+
+Training computers such as the COM-TRAN TEN provided a safe, inspectable environment for learning these concepts without risk to operational systems.
+
+Primary references include Bureau of Naval Personnel and Naval Education and Training Command material, including early editions of:
+
+- *NAVPERS 18068 – Manual of Navy Enlisted Manpower and Personnel Classifications*
+- *NEETS Module 20 – Digital Computers*
+
+### Training pipeline
+
+By the 1970s–1990s, DS training typically included:
+
+1. Basic electronics instruction
+2. DS Class A School
+3. Platform- and system-specific follow-on training
+
+The COM-TRAN TEN appears explicitly in DS Class A and Phase II curricula at Mare Island and Great Lakes as a **training-only instructional computer**.
+
+
+Primary references include:
+
+- *NAVADMIN 197/96 – Enlisted Rating Merger Plan*
+- Post-1997 *Navy Enlisted Classification (NEC) Manuals*
+
+---
 
 ## Device capabilities (as documented)
 
-- 8-bit word size with 8-bit A/B/Q/X/C registers; a word is two hex digits and represents
-  values from +127 to -128.
-- 1024 memory cells (0x000 to 0x3FF) arranged as 400 hex locations; upper memory is accessed
-  by paging the opcode.
-- 44 instructions across load, store, arithmetic, logical, branch, and I/O categories.
-- Two-phase instruction cycle: acquisition and execution.
-- Physical control panel with switches, hex keypad, register lamps, and manual memory entry.
+Based strictly on original training documentation:
 
-Primary sources: `Docs/Historical/KDA-3032_Digiac_COM-TRAN_TEN_Training_Jun81 ct10 ct-10.pdf`,
-`Docs/Architecture/CT10_Emulator_PRD.md`.
+- 8-bit word architecture
+- Registers: Accumulator (A), Quotient (Q), Index (X), Countdown (C), Buffer (B)
+- 1024 memory cells (0x000–0x3FF)
+- Two memory cells per instruction word
+- 44 instructions across load, store, arithmetic, logical, branch, and I/O classes
+- Two-phase instruction cycle: Acquisition and Execution
+- Physical control panel supporting manual memory entry and distributor stepping
 
-## Emulator goals and features
+Primary source: `Docs/Historical/KDA-3032_Digiac_COM-TRAN_TEN_Training_Jun81 ct10 ct-10.pdf`
 
-- Cycle-accurate timing with distributor pulses and CP1/CP2/CP3 clocks; 1x to 10x speed
-  scaling.
-- Explicit register, bus, and memory objects with deterministic machine state.
-- UI modeled after the COM-TRAN TEN control panel, plus a debug pane for buses, flags, and
-  timing phase.
+---
 
-Documentation: `Docs/Architecture/CT10_Emulator_PRD.md`,
-`Docs/Architecture/ARCHITECTURE.md`, `Docs/Architecture/TIMING_MODEL.md`.
+## Emulator goals and fidelity targets
 
-Note: The PRD and architectural documents were written by ChatGPT 5.2 using the sources in Docs/Historical, and the code was written by Codex using gpt-codex-5.2.
+- Cycle-accurate timing using CP1 / CP2 / CP3 clocks
+- Explicit modeling of registers, buses, and control signals
+- Deterministic state transitions
+- UI modeled directly after the physical CT-10 panel
+- Adjustable execution speed (1× to 10×)
+- Headless execution for regression testing and trace comparison
+
+Architectural intent is documented in:
+
+- `Docs/Architecture/CT10_Emulator_PRD.md`
+- `Docs/Architecture/ARCHITECTURE.md`
+- `Docs/Architecture/TIMING_MODEL.md`
+
+---
 
 ## Build and run
 
-Requirements: CMake 3.20+, a C++20 compiler, OpenGL, and internet access for FetchContent
-(GLFW and Dear ImGui).
+Requirements:
+
+- CMake 3.20+
+- C++20 compiler
+- OpenGL
+- Internet access for FetchContent (GLFW, Dear ImGui)
+- Primarily designed to run on OSX.  There is nothing in the codebase that would prevent it from running on other platforms but it hasn't been tested or built on them.
 
 ```bash
 ./scripts/build.sh
@@ -71,68 +142,46 @@ Run the headless core:
 ./build/ct10_headless
 ```
 
-Headless options (optional program/tape input):
-
-```bash
-./build/ct10_headless tests/programs/test.txt --max-steps 200000
-./build/ct10_headless tests/programs/test.txt --tape /path/to/input.txt --tape-hex
-./build/ct10_headless --tape /path/to/terminal.txt --tape-alpha
-./build/ct10_headless tests/programs/io_term_printer.txt \
-  --terminal-in tests/tapes/terminal_input.txt --terminal-alpha \
-  --expect-term tests/expected/terminal_output.hex \
-  --expect-printer tests/expected/printer_output.hex
-./build/ct10_headless tests/programs/io_term_printer.txt --io-mode alpha
-```
-
-I/O demo (terminal input echoed to terminal + printer):
-
-```bash
-./build/ct10_headless tests/programs/io_term_printer.txt --terminal-in tests/tapes/terminal_input.txt --terminal-alpha
-```
-
-UI tip: Terminal/Printer outputs can be saved from the Program pane in Raw/Text/Hex
-formats with optional timestamps.
-
-I/O regression:
-
-```bash
-./scripts/test_io.sh
-```
-
-## Fonts
-
-The UI loads fonts from `assets/fonts`, but the font files are gitignored. Copy
-OTF/TTF files into `assets/fonts` to enable the listed options in
-`src/ui/panel_layout.h`.
-
-Suggested sources (and licenses):
-- TeX Gyre family (GUST Font License): https://www.gust.org.pl/projects/e-foundry/tex-gyre/
-- Cousine (SIL OFL): https://fonts.google.com/specimen/Cousine
-- IBM Plex Mono (SIL OFL): https://fonts.google.com/specimen/IBM+Plex+Mono
-- Fira Mono (SIL OFL): https://fonts.google.com/specimen/Fira+Mono
-
-## Docs to read next
-
-- Product requirements and fidelity constraints: `Docs/Architecture/CT10_Emulator_PRD.md`
-- Core architecture: `Docs/Architecture/ARCHITECTURE.md`
-- Timing and micro-ops: `Docs/Architecture/TIMING_MODEL.md`,
-  `Docs/Architecture/INSTRUCTION_MICROOPS.md`
-- Golden lab program traces: `Docs/Architecture/GOLDEN_LAB_PROGRAM_TRACES.md`
+---
 
 ## Images
 
-Historical device and training materials:
+Front elevation and reference photos:
 
 ![COM-TRAN TEN front elevation](Docs/Historical/FrontElevation.jpg)
-![COM-TRAN TEN educational system](Docs/Historical/COM-TRAN10c.jpg)
+![COM-TRAN TEN angled view](Docs/Historical/COM-TRAN_TEN.jpg)
+![COM-TRAN TEN training unit](Docs/Historical/COM-TRAN10a.jpg)
+![COM-TRAN TEN panel detail](Docs/Historical/COM-TRAN10d.jpg)
 
 Emulator UI:
 
 ![CT-10 emulator screenshot](Docs/Output/Screenshot%202026-01-19%20at%2012.03.35.png)
 
+---
+
 ## Dependencies and licenses
 
-- Dear ImGui: MIT license.
-- GLFW: zlib/libpng license.
-- OpenGL: platform-provided Khronos API (system library).
-- CMake: BSD-3-Clause (build tool).
+- Dear ImGui — MIT License
+- GLFW — zlib/libpng License
+- OpenGL — Khronos API (system library)
+- CMake — BSD-3-Clause
+
+## Development
+
+- This was a project to see what chatgpt and codex put together could do easily.  Nearly everything in this codebase was written by Codex and designed by chatgpt, with architectural hints from me.  The UI had to be heavily manually aligned -- even with screenshots codex was not able to get it right.  
+- It is unlikely I will put any more time into this, but if anyone has programs they want to run on it and finds issues, feel free to open a PR w/ the text of the program and expected output and I'll take a look.
+- Additional test programs are also welcome as a PR to this project.
+
+---
+
+## Contributing
+
+- Fork the repository and create a feature branch for your changes.
+- Submit a pull request with a clear description of your changes and their purpose.
+- AI generated code is **explicitly allowed** in this project.  Review it first to make sure it makes sense.  
+
+---
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
