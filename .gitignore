@@ -28,3 +28,9 @@
 
 # ImGui runtime state
 imgui.ini
+
+# Fonts (local assets)
+/assets/fonts/*.otf
+/assets/fonts/*.ttf
+/assets/fonts/*.ttc
+/assets/fonts/*.otc

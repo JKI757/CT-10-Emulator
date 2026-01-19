@@ -20,6 +20,10 @@ Sources: `Docs/Historical/comtran10.pdf`,
 `Docs/Historical/KDA-3032_Digiac_COM-TRAN_TEN_Training_Jun81 ct10 ct-10.pdf`,
 `Docs/Historical/COM-TRAN10a.jpg`.
 
+## Navy DS rating notes
+
+- TODO: Fill in DS rating history with official Navy sources.
+
 ## Device capabilities (as documented)
 
 - 8-bit word size with 8-bit A/B/Q/X/C registers; a word is two hex digits and represents
@@ -43,6 +47,8 @@ Primary sources: `Docs/Historical/KDA-3032_Digiac_COM-TRAN_TEN_Training_Jun81 ct
 
 Documentation: `Docs/Architecture/CT10_Emulator_PRD.md`,
 `Docs/Architecture/ARCHITECTURE.md`, `Docs/Architecture/TIMING_MODEL.md`.
+
+Note: The PRD and architectural documents were written by ChatGPT 5.2 using the sources in Docs/Historical, and the code was written by Codex using gpt-codex-5.2.
 
 ## Build and run
 
@@ -93,6 +99,18 @@ I/O regression:
 ./scripts/test_io.sh
 ```
 
+## Fonts
+
+The UI loads fonts from `assets/fonts`, but the font files are gitignored. Copy
+OTF/TTF files into `assets/fonts` to enable the listed options in
+`src/ui/panel_layout.h`.
+
+Suggested sources (and licenses):
+- TeX Gyre family (GUST Font License): https://www.gust.org.pl/projects/e-foundry/tex-gyre/
+- Cousine (SIL OFL): https://fonts.google.com/specimen/Cousine
+- IBM Plex Mono (SIL OFL): https://fonts.google.com/specimen/IBM+Plex+Mono
+- Fira Mono (SIL OFL): https://fonts.google.com/specimen/Fira+Mono
+
 ## Docs to read next
 
 - Product requirements and fidelity constraints: `Docs/Architecture/CT10_Emulator_PRD.md`
@@ -110,4 +128,11 @@ Historical device and training materials:
 
 Emulator UI:
 
-![CT-10 emulator screenshot](Docs/Output/Screenshot%202026-01-16%20at%2022.51.44.png)
+![CT-10 emulator screenshot](Docs/Output/Screenshot%202026-01-19%20at%2012.03.35.png)
+
+## Dependencies and licenses
+
+- Dear ImGui: MIT license.
+- GLFW: zlib/libpng license.
+- OpenGL: platform-provided Khronos API (system library).
+- CMake: BSD-3-Clause (build tool).
