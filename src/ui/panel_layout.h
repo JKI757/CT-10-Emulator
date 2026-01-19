@@ -28,10 +28,17 @@ struct ControlSwitch {
 
 struct LampStripLayout {
   const char* label = "";
-  int x = 0;
-  int y = 0;
+  float x = 0.0f;
+  float y = 0.0f;
   int bits = 0;
-  int gap_after = 0;
+  int gap_after0 = -1;
+  int gap_after1 = -1;
+  int bit_offset = 0;
+  float gap_scale0 = 1.0f;
+  float gap_scale1 = 1.0f;
+  float label_offset_x = 0.0f;
+  float label_offset_y = 0.0f;
+  bool show_bit_labels = true;
 };
 
 struct IndicatorLayout {
@@ -81,8 +88,10 @@ struct HLine {
 
 struct PanelLayout {
   // Layout tuning map (panel units):
-  // - Panels/window: kRightColumnWidth, kPanelWidthMin, kPanelHeightMin, kPanelEdgeMargin.
-  // - Input grid: kInputGridCol*, kInputGridRow*, k*GroupTop*.
+  // - Panels/window: kRightColumnWidth, kPanelWidthMin, kPanelHeightMin,
+  //                  kPanelEdgeMargin, kInputPanelHeightTrim.
+  // - Input grid: kInputGridCol*, kInputGridRow*, k*GroupTop*,
+  //               kInputGroupShiftY, kKeypadGroupShiftY, kInputLine*.
   // - Input switches: kInputToggleBaseX, kInputToggleY, kInputBitOffsets, kInputLabelOffsetX/Y.
   // - Right groups: kIoModeGroupTop*, kControlGroupTop*, kModeGroupTop*,
   //                 kErrorBypassGroupTop*, kIoGroupTop*, kMemoryGroupTop*.
@@ -93,16 +102,29 @@ struct PanelLayout {
   // - Fonts: kFontOptions, kUiFontOptionIndex, kInputFontOptionIndex, kDisplayFontOptionIndex.
   // - Labels: kPowerLabelText, kLampTestLabelLine1/2, kBrandLabelText, kResetLabelText,
   //           kDigiaLabelText.
-  static constexpr int kWidth = 1280;
-  static constexpr int kHeight = 720;
-  static constexpr int kDisplayWidth = 720;
-  static constexpr int kDisplayHeight = 480;
+  static constexpr int kWidth = 1536;
+  static constexpr int kHeight = 864;
+  static constexpr int kDisplayWidth = 1280;
+  static constexpr int kDisplayHeight = 960;
+  static constexpr float kDisplayBottomMinSpacing = 10.0f;
+  static constexpr float kDisplayBottomSpacingSlots = 4.0f;
   static constexpr int kInputWidth = 1280;
   static constexpr int kInputHeight = 720;
   static constexpr int kButtonSize = 66;
-  static constexpr int kLampSize = kButtonSize;
+  static constexpr float kLampSize = kButtonSize * 0.8;
   static constexpr int kLampGap = 6;
   static constexpr int kLampGroupGap = 16;
+  static constexpr int kLampBits8 = 8;
+  static constexpr int kLampBits6 = 6;
+  static constexpr int kLampBits10 = 10;
+  static constexpr int kLampBits4 = 4;
+  static constexpr int kLampBits5 = 5;
+  static constexpr int kLampGap4 = 4;
+  static constexpr int kLampGap2 = 2;
+  static constexpr int kLampGap0 = 0;
+  static constexpr float kDisplayGapScaleDefault = 1.0f;
+  static constexpr float kDisplayGapScale34 = 2.0f;
+  static constexpr float kDisplayGapScale78 = 4.0f;
   static constexpr int kToggleW = kButtonSize;
   static constexpr int kToggleH = kButtonSize;
   static constexpr float kButtonLabelOffsetY = 40.0f;
@@ -136,6 +158,8 @@ struct PanelLayout {
   static constexpr int kInputGridRow6Y = 620;
 
   // Group anchors (top-left coordinates) derived from the grid.
+  static constexpr int kInputGroupShiftY = 100;
+  static constexpr int kKeypadGroupShiftY = 100;
   static constexpr int kPowerGroupTopX = kInputGridColLeftX;
   static constexpr int kPowerGroupTopY = kInputGridRow2Y;
   static constexpr int kBrandGroupTopX = kInputGridColLeftX;
@@ -144,11 +168,12 @@ struct PanelLayout {
   static constexpr int kLampTestGroupTopY = kInputGridRow4Y;
 
   static constexpr int kInputGroupTopX = kInputGridColMidX;
-  static constexpr int kInputGroupTopY = kInputGridRow0Y;
+  static constexpr int kInputGroupTopY = kInputGridRow0Y + kInputGroupShiftY;
   static constexpr int kKeypadGroupOffsetX = 340;
-  static constexpr int kKeypadGroupOffsetY = 20;
+  static constexpr int kKeypadGroupOffsetY = 10;
   static constexpr int kKeypadGroupTopX = kInputGridColMidX + kKeypadGroupOffsetX;
-  static constexpr int kKeypadGroupTopY = kInputGridRow2Y + kKeypadGroupOffsetY;
+  static constexpr int kKeypadGroupTopY =
+      kInputGridRow2Y + kKeypadGroupOffsetY + kKeypadGroupShiftY;
   static constexpr int kRegisterLoadGroupTopX = kInputGridColMidX;
   static constexpr int kRegisterLoadGroupTopY = kInputGridRow6Y;
 
@@ -220,6 +245,9 @@ struct PanelLayout {
   static constexpr const char* kIoReadLabelLine2 = "INTRPT";
   static constexpr const char* kIoWriteLabelLine1 = "WRITE";
   static constexpr const char* kIoWriteLabelLine2 = "BLOCK";
+  static constexpr const char* kDisplayOpCodeLowerLabelText = "OP CODE";
+  static constexpr const char* kDisplayXLowerLabelText = "X";
+  static constexpr const char* kDisplayMemAddrLowerLabelText = "MEMORY ADDRESS";
   static constexpr int kIoReadLabelOffsetY = -15;
   static constexpr int kIoWriteLabelOffsetY = kIoReadLabelOffsetY;
 
@@ -228,6 +256,7 @@ struct PanelLayout {
   static constexpr float kPanelWidthPadding = 30.0f;
   static constexpr float kPanelHeightMin = 520.0f;
   static constexpr float kPanelHeightPadding = 40.0f;
+  static constexpr float kInputPanelHeightTrim = 100.0f;
   static constexpr float kPanelGap = 16.0f;
   static constexpr float kTopHeightMin = 240.0f;
   static constexpr float kTopHeightRatio = 0.42f;
@@ -254,6 +283,13 @@ struct PanelLayout {
   static constexpr float kLampBitLabelOffset = kLampSize;
   static constexpr float kIndicatorLabelOffsetX = kLampSize * 0.5f;
   static constexpr float kIndicatorLabelOffsetY = kLampSize * 0.1f;
+  static constexpr float kDisplayLabelAboveOffsetY = -kLampStripLabelOffset;
+  static constexpr float kDisplayLabelBelowOffsetY = kLampStripLabelOffset;
+  static constexpr float kDisplayOpSubLabelPadY = 12.0f;
+  static constexpr float kDisplayOpSubLabelOffsetY = kLampSize + kDisplayOpSubLabelPadY;
+  static constexpr float kDisplayOpCodeLowerLabelOffsetX = 0.0f;
+  static constexpr float kDisplayXLowerLabelOffsetX = 0.0f;
+  static constexpr float kDisplayMemAddrLowerLabelOffsetX = 0.0f;
 
   static constexpr ColorRGBA kPanelBorderColor{18, 18, 18, 255};
   static constexpr ColorRGBA kMomentaryButtonBorderColor{18, 18, 18, 255};
@@ -443,7 +479,7 @@ struct PanelLayout {
   static constexpr int kModeRptSenseBaseY =
       kModeGroupBaseY + kRightLabelToToggleY + kModeRptSenseOffsetY;
   static constexpr int kModeRptLabelOffsetX = -12;
-  static constexpr int kModeSingleLabelOffsetX = -20;
+  static constexpr int kModeSingleLabelOffsetX = -25;
 
   static constexpr int kIoGroupBaseX = kIoGroupTopX;
   static constexpr int kIoGroupBaseY = kIoGroupTopY;
@@ -512,66 +548,154 @@ struct PanelLayout {
   static constexpr int kDisplayRowMidIndex = 1;
   static constexpr int kDisplayRowOpIndex = 2;
   static constexpr int kDisplayRowBottomIndex = 3;
-  inline static constexpr std::array<int, 4> kDisplayRowY = {{90, 170, 260, 420}};
+  static constexpr int kDisplayRowGap =
+      static_cast<int>(kLampSize * 2.0f + 24.0f);
+  static constexpr int kDisplayRowTopY = 80;
+  static constexpr int kDisplayRowMidY = kDisplayRowTopY + kDisplayRowGap;
+  static constexpr int kDisplayRowOpY = kDisplayRowMidY + kDisplayRowGap;
+  static constexpr int kDisplayRowBottomY = kDisplayRowOpY + kDisplayRowGap;
+  inline static constexpr std::array<int, 4> kDisplayRowY = {{
+      kDisplayRowTopY, kDisplayRowMidY, kDisplayRowOpY, kDisplayRowBottomY
+  }};
 
-  static constexpr int kDisplayLeftGroupBaseX = 200;
-  static constexpr int kDisplayRightGroupBaseX = 468;
-  static constexpr int kDisplayBottomGroupBaseX = 40;
-  static constexpr int kDisplayLeftBaseX = kDisplayLeftGroupBaseX;
-  inline static constexpr std::array<int, 3> kDisplayLeftRowOffsets = {{0, 20, 40}};
+  static constexpr float kDisplayRightEdgeInset = 20.0f;
+  static constexpr float kDisplayStripWidth8 =
+      kLampBits8 * (kLampSize + kLampGap) - kLampGap +
+      (kLampGroupGap * kDisplayGapScale34);
+  static constexpr float kDisplayStripWidth10 =
+      kLampBits10 * (kLampSize + kLampGap) - kLampGap +
+      (kLampGroupGap * (kDisplayGapScale78 + kDisplayGapScale34));
+  static constexpr float kDisplayStripWidth5 =
+      kLampBits5 * (kLampSize + kLampGap) - kLampGap +
+      (kLampGroupGap * kDisplayGapScale34);
+  static constexpr int kOpCodeGapIndex0 = 4;
+  static constexpr int kOpCodeGapIndex1 = 5;
+  static constexpr float kDisplayLeftGroupOffsetX = 1225.0f;
+  static constexpr float kDisplayRightGroupOffsetX = 780.0f;
+  static constexpr float kDisplayRightOpGroupOffsetX = 780.0f;
+  static constexpr float kDisplayIndicatorGroupOffsetX = 210.0f;
+  static constexpr float kDisplayIndicatorGroupOffsetY = -90.0f;
+  static constexpr float kDisplayBottomTotalWidth =
+      kDisplayStripWidth8 + kDisplayStripWidth5 + kDisplayStripWidth10;
+  static constexpr float kDisplayBottomSpacingRaw =
+      (kDisplayWidth - kDisplayBottomTotalWidth) / kDisplayBottomSpacingSlots;
+  static constexpr float kDisplayBottomSpacing =
+      (kDisplayBottomSpacingRaw < kDisplayBottomMinSpacing)
+          ? kDisplayBottomMinSpacing
+          : kDisplayBottomSpacingRaw;
+  static constexpr float kDisplayBottomCountdownX = kDisplayBottomSpacing;
+  static constexpr float kDisplayBottomDistributorX =
+      kDisplayBottomCountdownX + kDisplayStripWidth8 + kDisplayBottomSpacing;
+  static constexpr float kDisplayBottomProgramX =
+      kDisplayBottomDistributorX + kDisplayStripWidth5 + kDisplayBottomSpacing;
+  static constexpr float kDisplayBottomCountdownRightX =
+      kDisplayBottomCountdownX + kDisplayStripWidth8;
+  static constexpr float kDisplayBottomProgramRightX =
+      kDisplayBottomProgramX + kDisplayStripWidth10;
+  static constexpr float kDisplayRightEdgeX =
+      kDisplayBottomProgramRightX - kDisplayRightEdgeInset;
+  static constexpr float kDisplayLeftGroupBaseX =
+      kDisplayBottomCountdownRightX - kDisplayStripWidth8 + kDisplayLeftGroupOffsetX;
+  static constexpr float kDisplayRightGroupBaseX =
+      kDisplayBottomProgramRightX - kDisplayStripWidth8 + kDisplayRightGroupOffsetX;
+  static constexpr float kDisplayRightOpGroupBaseX =
+      kDisplayBottomProgramRightX - kDisplayStripWidth10 + kDisplayRightOpGroupOffsetX;
+  static constexpr float kDisplayBottomGroupBaseX = 40.0f;
+  static constexpr float kDisplayLeftBaseX = kDisplayLeftGroupBaseX;
+  static constexpr int kDisplayLeftRowTopOffsetX = 0;
+  static constexpr int kDisplayLeftRowMidOffsetX = 0;
+  static constexpr int kDisplayLeftRowOpOffsetX = 0;
+  inline static constexpr std::array<int, 3> kDisplayLeftRowOffsets = {{
+      kDisplayLeftRowTopOffsetX,
+      kDisplayLeftRowMidOffsetX,
+      kDisplayLeftRowOpOffsetX
+  }};
 
-  static constexpr int kDisplayRightBaseX = kDisplayRightGroupBaseX;
-  inline static constexpr std::array<int, 3> kDisplayRightRowOffsets = {{0, 0, 0}};
+  static constexpr float kDisplayRightBaseX = kDisplayRightGroupBaseX;
+  static constexpr int kDisplayRightRowTopOffsetX = 0;
+  static constexpr int kDisplayRightRowMidOffsetX = 0;
+  static constexpr int kDisplayRightRowOpOffsetX = 0;
+  inline static constexpr std::array<int, 3> kDisplayRightRowOffsets = {{
+      kDisplayRightRowTopOffsetX,
+      kDisplayRightRowMidOffsetX,
+      kDisplayRightRowOpOffsetX
+  }};
 
-  static constexpr int kDisplayBottomBaseX = kDisplayBottomGroupBaseX;
-  inline static constexpr std::array<int, 3> kDisplayBottomOffsets = {{0, 242, 372}};
-  static constexpr int kLampBits8 = 8;
-  static constexpr int kLampBits10 = 10;
-  static constexpr int kLampBits4 = 4;
-  static constexpr int kLampGap4 = 4;
-  static constexpr int kLampGap2 = 2;
-  static constexpr int kLampGap0 = 0;
-
-  static constexpr int kAccumulatorGroupBaseX =
+  static constexpr float kDisplayBottomBaseX = kDisplayBottomGroupBaseX;
+  static constexpr int kDisplayBottomCountdownOffsetX = 0;
+  static constexpr int kDisplayBottomDistributorOffsetX = 242;
+  static constexpr int kDisplayBottomProgramOffsetX = 372;
+  inline static constexpr std::array<int, 3> kDisplayBottomOffsets = {{
+      kDisplayBottomCountdownOffsetX,
+      kDisplayBottomDistributorOffsetX,
+      kDisplayBottomProgramOffsetX
+  }};
+  static constexpr float kAccumulatorGroupBaseX =
       kDisplayLeftGroupBaseX + kDisplayLeftRowOffsets[kDisplayRowTopIndex];
   static constexpr int kAccumulatorGroupBaseY = kDisplayRowY[kDisplayRowTopIndex];
-  static constexpr int kQuotientGroupBaseX =
+  static constexpr float kQuotientGroupBaseX =
       kDisplayRightGroupBaseX + kDisplayRightRowOffsets[kDisplayRowTopIndex];
   static constexpr int kQuotientGroupBaseY = kDisplayRowY[kDisplayRowTopIndex];
-  static constexpr int kBufferGroupBaseX =
+  static constexpr float kBufferGroupBaseX =
       kDisplayLeftGroupBaseX + kDisplayLeftRowOffsets[kDisplayRowMidIndex];
   static constexpr int kBufferGroupBaseY = kDisplayRowY[kDisplayRowMidIndex];
-  static constexpr int kIndexGroupBaseX =
+  static constexpr float kIndexGroupBaseX =
       kDisplayRightGroupBaseX + kDisplayRightRowOffsets[kDisplayRowMidIndex];
   static constexpr int kIndexGroupBaseY = kDisplayRowY[kDisplayRowMidIndex];
-  static constexpr int kOpCodeGroupBaseX =
+  static constexpr float kOpCodeGroupBaseX =
       kDisplayLeftGroupBaseX + kDisplayLeftRowOffsets[kDisplayRowOpIndex];
   static constexpr int kOpCodeGroupBaseY = kDisplayRowY[kDisplayRowOpIndex];
-  static constexpr int kMemAddrGroupBaseX =
-      kDisplayRightGroupBaseX + kDisplayRightRowOffsets[kDisplayRowOpIndex];
+  static constexpr float kMemAddrGroupBaseX =
+      kDisplayRightOpGroupBaseX + kDisplayRightRowOffsets[kDisplayRowOpIndex];
   static constexpr int kMemAddrGroupBaseY = kDisplayRowY[kDisplayRowOpIndex];
-  static constexpr int kCountdownGroupBaseX =
+  static constexpr float kCountdownGroupBaseX =
       kDisplayBottomGroupBaseX + kDisplayBottomOffsets[0];
   static constexpr int kCountdownGroupBaseY = kDisplayRowY[kDisplayRowBottomIndex];
-  static constexpr int kDistributorGroupBaseX =
+  static constexpr float kDistributorGroupBaseX =
       kDisplayBottomGroupBaseX + kDisplayBottomOffsets[1];
   static constexpr int kDistributorGroupBaseY = kDisplayRowY[kDisplayRowBottomIndex];
-  static constexpr int kProgramAddressGroupBaseX =
+  static constexpr float kProgramAddressGroupBaseX =
       kDisplayBottomGroupBaseX + kDisplayBottomOffsets[2];
   static constexpr int kProgramAddressGroupBaseY = kDisplayRowY[kDisplayRowBottomIndex];
 
-  static constexpr int kIndicatorGroupBaseXDefault = 60;
-  static constexpr int kIndicatorGroupLabelOffsetX = -40;
-  static constexpr int kIndicatorStepY = 30;
+  static constexpr float kIndicatorBit4CenterX =
+      kDisplayBottomCountdownX + 3.0f * (kLampSize + kLampGap) + kLampSize * 0.5f;
+  static constexpr int kIndicatorGroupBaseXDefault =
+      static_cast<int>(kIndicatorBit4CenterX - kLampSize * 0.5f +
+                       kDisplayIndicatorGroupOffsetX);
+  static constexpr int kIndicatorGroupLabelOffsetX = -90;
+  static constexpr int kIndicatorStepY =
+      static_cast<int>(kLampSize + 20.0f);
+  static constexpr int kIndicatorGroupRows = 4;
+  static constexpr int kIndicatorGroupHeight =
+      (kIndicatorGroupRows - 1) * kIndicatorStepY +
+      static_cast<int>(kLampSize);
+  static constexpr int kIndicatorGroupGapY =
+      static_cast<int>(kLampSize * 0.5f + 10.0f);
+  static constexpr int kIndicatorCondCount = 4;
+  static constexpr int kIndicatorStatusCount = 4;
+  static constexpr int kIndicatorErrorCount = 3;
+  static constexpr int kIndicatorCondLabelCenterOffsetY =
+      static_cast<int>((kIndicatorCondCount - 1) * kIndicatorStepY * 0.5f +
+                       kLampSize * 0.5f)-30;
+  static constexpr int kIndicatorStatusLabelCenterOffsetY =
+      static_cast<int>((kIndicatorStatusCount - 1) * kIndicatorStepY * 0.5f +
+                       kLampSize * 0.5f)-20;
+  static constexpr int kIndicatorErrorLabelCenterOffsetY =
+      static_cast<int>((kIndicatorErrorCount - 1) * kIndicatorStepY * 0.5f +
+                       kLampSize * 0.5f)-20;
   static constexpr int kIndicatorCondIndex = 0;
   static constexpr int kIndicatorStatusIndex = 1;
   static constexpr int kIndicatorErrorIndex = 2;
   static constexpr int kCondGroupBaseX = kIndicatorGroupBaseXDefault;
-  static constexpr int kCondGroupBaseY = 60;
+  static constexpr int kCondGroupBaseY =
+      static_cast<int>(70 + kDisplayIndicatorGroupOffsetY);
   static constexpr int kStatusGroupBaseX = kIndicatorGroupBaseXDefault;
-  static constexpr int kStatusGroupBaseY = 180;
+  static constexpr int kStatusGroupBaseY =
+      kCondGroupBaseY + kIndicatorGroupHeight + kIndicatorGroupGapY;
   static constexpr int kErrorGroupBaseX = kIndicatorGroupBaseXDefault;
-  static constexpr int kErrorGroupBaseY = 300;
+  static constexpr int kErrorGroupBaseY =
+      kStatusGroupBaseY + kIndicatorGroupHeight + kIndicatorGroupGapY;
   inline static constexpr std::array<int, 3> kIndicatorGroupBaseX = {{
       kCondGroupBaseX, kStatusGroupBaseX, kErrorGroupBaseX,
   }};
@@ -579,7 +703,9 @@ struct PanelLayout {
       kCondGroupBaseY, kStatusGroupBaseY, kErrorGroupBaseY,
   }};
   inline static constexpr std::array<int, 3> kIndicatorGroupLabelOffsetY = {{
-      kGroupLabelOffsetY, kGroupLabelOffsetY, kGroupLabelOffsetY
+      kIndicatorCondLabelCenterOffsetY,
+      kIndicatorStatusLabelCenterOffsetY,
+      kIndicatorErrorLabelCenterOffsetY
   }};
 
 
@@ -594,9 +720,9 @@ struct PanelLayout {
   static constexpr float kResetLabelOffsetY = 40.0f;
 
   static constexpr float kDisplayBottomMargin = 40.0f;
-  static constexpr float kDisplayBottomMinSpacing = 10.0f;
-  static constexpr float kDisplayBottomSpacingSlots = 4.0f;
   static constexpr int kTopLampStripCount = 6;
+  static constexpr int kOpCodeStripIndex = 4;
+  static constexpr int kOperandStripIndex = 5;
   static constexpr int kCountdownStripIndex = 6;
   static constexpr int kDistributorStripIndex = 7;
   static constexpr int kProgramAddressStripIndex = 8;
@@ -740,9 +866,9 @@ struct PanelLayout {
           {"CLEAR", {kControlButtonBaseX + kControlClearOffsetX,
                      kControlButtonY, kControlButtonW, kControlButtonH}},
           {"STOP", {kControlButtonBaseX + kControlStopOffsetX,
-                    kControlButtonY, kControlButtonW, kControlButtonH}},
+                    kControlButtonY, kControlButtonW, kControlButtonH}, .label_offset_x=5},
           {"START", {kControlButtonBaseX + kControlStartOffsetX,
-                     kControlButtonY, kControlButtonW, kControlButtonH}},
+                     kControlButtonY, kControlButtonW, kControlButtonH}, .label_offset_x=5},
       }},
   };
 
@@ -791,26 +917,11 @@ struct PanelLayout {
       }},
   };
 
-  static constexpr float kInputHeaderLineYOffset = 15.0f;
-  static constexpr float kInputHeaderLineLeftStartOffsetX = -480.0f;
-  static constexpr float kInputHeaderLineLeftEndOffsetX = -20.0f;
-  static constexpr float kInputHeaderLineRightStartOffsetX = 90.0f;
-  static constexpr float kInputHeaderLineRightEndOffsetX = 510.0f;
-  static constexpr float kInputHeaderLineY = kInputLabelY + kInputHeaderLineYOffset;
-  static constexpr float kInputHeaderLineLeftX1 =
-      kInputLabelX + kInputHeaderLineLeftStartOffsetX;
-  static constexpr float kInputHeaderLineLeftX2 =
-      kInputLabelX + kInputHeaderLineLeftEndOffsetX;
-  static constexpr float kInputHeaderLineRightX1 =
-      kInputLabelX + kInputHeaderLineRightStartOffsetX;
-  static constexpr float kInputHeaderLineRightX2 =
-      kInputLabelX + kInputHeaderLineRightEndOffsetX;
-  inline static constexpr std::array<HLine, 2> kInputHeaderLines = {{
-      {kInputHeaderLineLeftX1, kInputHeaderLineLeftX2,
-       kInputHeaderLineY, kInputLineThickness},
-      {kInputHeaderLineRightX1, kInputHeaderLineRightX2,
-       kInputHeaderLineY, kInputLineThickness},
-  }};
+  static constexpr float kInputGroupLeftX = kInputToggleBaseX;
+  static constexpr float kInputGroupRightX = kResetX + kResetW;
+  static constexpr float kInputLineY = kInputLabelY + kGroupLineYOffset;
+  static constexpr float kInputLineBottomY =
+      kInputToggleY + kInputToggleH * kGroupLineDropFactor;
 
   // ============ RIGHT SIDE CONTROL SECTIONS ============
   // Row 1: I/O MODE (left) and CONTROL (right)
@@ -822,9 +933,9 @@ struct PanelLayout {
       {"I/O MODE", kIoModeLabelX, kIoModeLabelY},
       kButtonLabelOffsetY,
       {{
-          {"OCTAL", {kIoModeX0 + 0 * kIoModeStep, kIoModeY, kToggleW, kToggleH}, .label_offset_x = -10},
+          {"OCTAL", {kIoModeX0 + 0 * kIoModeStep, kIoModeY, kToggleW, kToggleH}, .label_offset_x = -20},
           {"HEX", {kIoModeX0 + 1 * kIoModeStep, kIoModeY, kToggleW, kToggleH}, .label_offset_x = -5},
-          {"ALPHA", {kIoModeX0 + 2 * kIoModeStep, kIoModeY, kToggleW, kToggleH}, .label_offset_x = -10},
+          {"ALPHA", {kIoModeX0 + 2 * kIoModeStep, kIoModeY, kToggleW, kToggleH}, .label_offset_x = -20},
       }},
   };
 
@@ -839,10 +950,10 @@ struct PanelLayout {
       {"MODE", kModeLabelX, kModeLabelY},
       kButtonLabelOffsetY,
       {{
-          {"DIST", {kModeX0 + 0 * kModeStep, kModeY, kToggleW, kToggleH}},
-          {"A/E", {kModeX0 + 1 * kModeStep, kModeY, kToggleW, kToggleH}},
-          {"INST", {kModeX0 + 2 * kModeStep, kModeY, kToggleW, kToggleH}},
-          {"PROG", {kModeX0 + 3 * kModeStep, kModeY, kToggleW, kToggleH}},
+          {"DIST", {kModeX0 + 0 * kModeStep, kModeY, kToggleW, kToggleH}, .label_offset_x=-10},
+          {"A/E", {kModeX0 + 1 * kModeStep, kModeY, kToggleW, kToggleH},  .label_offset_x=-5},
+          {"INST", {kModeX0 + 2 * kModeStep, kModeY, kToggleW, kToggleH}, .label_offset_x=-15},
+          {"PROG", {kModeX0 + 3 * kModeStep, kModeY, kToggleW, kToggleH}, .label_offset_x=-15},
           {"RPT", {kModeRptSenseBaseX + 0 * kRightPairStepX,
                    kModeRptSenseBaseY, kToggleW, kToggleH},
                    kModeRptLabelOffsetX},
@@ -912,8 +1023,8 @@ struct PanelLayout {
           {"C", {kLoadBaseX + kLoadOffsets[2], kLoadY, kLoadWidths[2], kLoadButtonH}},
           {"D", {kLoadBaseX + kLoadOffsets[3], kLoadY, kLoadWidths[3], kLoadButtonH}},
           {"OP", {kLoadBaseX + kLoadOffsets[4], kLoadY, kLoadWidths[4], kLoadButtonH}},
-          {"MAR", {kLoadBaseX + kLoadOffsets[5], kLoadY, kLoadWidths[5], kLoadButtonH}},
-          {"PAR", {kLoadBaseX + kLoadOffsets[6], kLoadY, kLoadWidths[6], kLoadButtonH}},
+          {"MAR", {kLoadBaseX + kLoadOffsets[5], kLoadY, kLoadWidths[5], kLoadButtonH}, .label_offset_x=2},
+          {"PAR", {kLoadBaseX + kLoadOffsets[6], kLoadY, kLoadWidths[6], kLoadButtonH}, .label_offset_x=2},
           {"Q", {kLoadBaseX + kLoadOffsets[7], kLoadY, kLoadWidths[7], kLoadButtonH}},
           {"X", {kLoadBaseX + kLoadOffsets[8], kLoadY, kLoadWidths[8], kLoadButtonH}},
       }},
@@ -931,23 +1042,47 @@ struct PanelLayout {
 
   inline static constexpr std::array<LampStripLayout, 9> kLampStrips = {{
       {"ACCUMULATOR",
-       kAccumulatorGroupBaseX, kAccumulatorGroupBaseY, kLampBits8, kLampGap4},
+       kAccumulatorGroupBaseX, kAccumulatorGroupBaseY, kLampBits8,
+       kLampGap4, -1, 0,
+       kDisplayGapScale34, kDisplayGapScaleDefault,
+       0.0f, kDisplayLabelAboveOffsetY, true},
       {"QUOTIENT",
-       kQuotientGroupBaseX, kQuotientGroupBaseY, kLampBits8, kLampGap4},
+       kQuotientGroupBaseX, kQuotientGroupBaseY, kLampBits8,
+       kLampGap4, -1, 0,
+       kDisplayGapScale34, kDisplayGapScaleDefault,
+       0.0f, kDisplayLabelAboveOffsetY, true},
       {"BUFFER",
-       kBufferGroupBaseX, kBufferGroupBaseY, kLampBits8, kLampGap4},
+       kBufferGroupBaseX, kBufferGroupBaseY, kLampBits8,
+       kLampGap4, -1, 0,
+       kDisplayGapScale34, kDisplayGapScaleDefault,
+       0.0f, kDisplayLabelAboveOffsetY, true},
       {"INDEX",
-       kIndexGroupBaseX, kIndexGroupBaseY, kLampBits8, kLampGap4},
+       kIndexGroupBaseX, kIndexGroupBaseY, kLampBits8,
+       kLampGap4, -1, 0,
+       kDisplayGapScale34, kDisplayGapScaleDefault,
+       0.0f, kDisplayLabelAboveOffsetY, true},
       {"OP CODE",
-       kOpCodeGroupBaseX, kOpCodeGroupBaseY, kLampBits8, kLampGap4},
-      {"MEM ADDR",
-       kMemAddrGroupBaseX, kMemAddrGroupBaseY, kLampBits10, kLampGap2},
+       kOpCodeGroupBaseX, kOpCodeGroupBaseY, kLampBits6,
+       kOpCodeGapIndex0, kOpCodeGapIndex1, 2,
+       kDisplayGapScaleDefault, kDisplayGapScaleDefault,
+       0.0f, kDisplayLabelAboveOffsetY, false},
+      {"OPERAND",
+       kMemAddrGroupBaseX, kMemAddrGroupBaseY, kLampBits10, 2, 6, 0,
+       kDisplayGapScale78, kDisplayGapScale34,
+       0.0f, kDisplayLabelAboveOffsetY, true},
       {"COUNTDOWN",
-       kCountdownGroupBaseX, kCountdownGroupBaseY, kLampBits8, kLampGap4},
+       kCountdownGroupBaseX, kCountdownGroupBaseY, kLampBits8,
+       kLampGap4, -1, 0,
+       kDisplayGapScale34, kDisplayGapScaleDefault,
+       0.0f, kDisplayLabelBelowOffsetY, true},
       {"DISTRIBUTOR",
-       kDistributorGroupBaseX, kDistributorGroupBaseY, kLampBits4, kLampGap0},
-      {"PROG ADDR",
-       kProgramAddressGroupBaseX, kProgramAddressGroupBaseY, kLampBits10, kLampGap2},
+       kDistributorGroupBaseX, kDistributorGroupBaseY, kLampBits5, 1, -1, 0,
+       kDisplayGapScale34, kDisplayGapScaleDefault,
+       0.0f, kDisplayLabelBelowOffsetY, true},
+      {"PROGRAM ADDRESS",
+       kProgramAddressGroupBaseX, kProgramAddressGroupBaseY, kLampBits10,
+       2, 6, 0, kDisplayGapScaleDefault, kDisplayGapScale34,
+       0.0f, kDisplayLabelBelowOffsetY, true},
   }};
 
   inline static constexpr std::array<IndicatorLayout, 4> kCondIndicators = {{
@@ -966,7 +1101,7 @@ struct PanelLayout {
   }};
 
   inline static constexpr TextLabel kCondLabel = {
-      "COND CODE",
+      "COND\nCODE",
       kIndicatorGroupBaseX[kIndicatorCondIndex] + kIndicatorGroupLabelOffsetX,
       kIndicatorGroupBaseY[kIndicatorCondIndex] +
           kIndicatorGroupLabelOffsetY[kIndicatorCondIndex],

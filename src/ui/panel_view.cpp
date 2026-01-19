@@ -387,6 +387,37 @@ void DrawLampBox(const ImVec2& origin,
                      PanelLayout::kLampBorderThickness);
 }
 
+float LampStripWidth(const LampStripLayout& layout) {
+  float lamp = PanelLayout::kLampSize;
+  float gap = PanelLayout::kLampGap;
+  float group_gap = PanelLayout::kLampGroupGap;
+  if (layout.bits <= 0) {
+    return 0.0f;
+  }
+  float width = layout.bits * (lamp + gap) - gap;
+  if (layout.gap_after0 >= 0) {
+    width += group_gap * layout.gap_scale0;
+  }
+  if (layout.gap_after1 >= 0) {
+    width += group_gap * layout.gap_scale1;
+  }
+  return width;
+}
+
+float LampOffsetForIndex(const LampStripLayout& layout, int index) {
+  float lamp = PanelLayout::kLampSize;
+  float gap = PanelLayout::kLampGap;
+  float group_gap = PanelLayout::kLampGroupGap;
+  float offset = index * (lamp + gap);
+  if (layout.gap_after0 >= 0 && index >= layout.gap_after0) {
+    offset += group_gap * layout.gap_scale0;
+  }
+  if (layout.gap_after1 >= 0 && index >= layout.gap_after1) {
+    offset += group_gap * layout.gap_scale1;
+  }
+  return offset;
+}
+
 void DrawLampStrip(const ImVec2& origin,
                    float scale,
                    const LampStripLayout& layout,
@@ -397,28 +428,31 @@ void DrawLampStrip(const ImVec2& origin,
   float gap = PanelLayout::kLampGap;
   float group_gap = PanelLayout::kLampGroupGap;
 
-  ImVec2 label_pos(origin.x + layout.x * scale,
-                   origin.y + (layout.y - PanelLayout::kLampStripLabelOffset) * scale);
+  float strip_width = LampStripWidth(layout);
+  ImVec2 label_size = ImGui::CalcTextSize(layout.label);
+  float label_x =
+      layout.x + (strip_width - label_size.x) * 0.5f + layout.label_offset_x;
+  float label_y = layout.y + layout.label_offset_y;
+  ImVec2 label_pos(origin.x + label_x * scale, origin.y + label_y * scale);
   draw_list->AddText(label_pos, Color(PanelLayout::kTextLight), layout.label);
 
   int bits = layout.bits;
-  int gap_after = layout.gap_after;
   for (int i = 0; i < bits; ++i) {
-    int bit = (bits - 1) - i;
-    float offset = i * (lamp + gap);
-    if (gap_after > 0 && i >= gap_after) {
-      offset += group_gap;
-    }
+    int bit = (bits - 1) - i + layout.bit_offset;
+    float offset = LampOffsetForIndex(layout, i);
     float x = layout.x + offset;
     float y = layout.y;
     bool on = lamp_test ? true : ((value >> bit) & 0x1u);
     DrawLampBox(origin, scale, x, y, lamp, on, draw_list);
 
+    if (!layout.show_bit_labels) {
+      continue;
+    }
     char bit_label[4];
     std::snprintf(bit_label, sizeof(bit_label), "%d", bit);
     ImVec2 text_size = ImGui::CalcTextSize(bit_label);
     float text_x = origin.x + (x + (lamp - text_size.x) * 0.5f) * scale;
-    float text_y = origin.y + (y - PanelLayout::kLampBitLabelOffset) * scale;
+    float text_y = origin.y + (y + (lamp - text_size.y) * 0.5f) * scale;
     draw_list->AddText(ImVec2(text_x, text_y), Color(PanelLayout::kTextMuted), bit_label);
   }
 }
@@ -468,20 +502,6 @@ void DrawDisplayPanel(core::MachineState& state,
                       float panel_width_units,
                       float panel_height_units,
                       ImDrawList* draw_list) {
-  auto strip_width = [](const LampStripLayout& layout) -> float {
-    float lamp = PanelLayout::kLampSize;
-    float gap = PanelLayout::kLampGap;
-    float group_gap = PanelLayout::kLampGroupGap;
-    if (layout.bits <= 0) {
-      return 0.0f;
-    }
-    float width = layout.bits * (lamp + gap) - gap;
-    if (layout.gap_after > 0) {
-      width += group_gap;
-    }
-    return width;
-  };
-
   DrawGroupLabel(PanelLayout::kCondLabel, scale, layout_origin, draw_list);
   DrawGroupLabel(PanelLayout::kStatusLabel, scale, layout_origin, draw_list);
   DrawGroupLabel(PanelLayout::kErrorLabel, scale, layout_origin, draw_list);
@@ -527,6 +547,14 @@ void DrawDisplayPanel(core::MachineState& state,
                  lamp_test,
                  draw_list);
 
+  bool any_error = power_on &&
+                   (state.flags.inst_error || state.flags.add_overflow ||
+                    state.flags.divide_overflow);
+  uint16_t distributor_value =
+      static_cast<uint16_t>(power_on ? state.distributor.value() : 0);
+  if (any_error) {
+    distributor_value |= 0x10;
+  }
   const uint16_t lamp_values[] = {
       static_cast<uint16_t>(power_on ? state.accumulator.value() : 0),
       static_cast<uint16_t>(power_on ? state.quotient.value() : 0),
@@ -535,7 +563,7 @@ void DrawDisplayPanel(core::MachineState& state,
       static_cast<uint16_t>(power_on ? state.opcode.value() : 0),
       static_cast<uint16_t>(power_on ? state.mar.value() : 0),
       static_cast<uint16_t>(power_on ? state.countdown.value() : 0),
-      static_cast<uint16_t>(power_on ? state.distributor.value() : 0),
+      distributor_value,
       static_cast<uint16_t>(power_on ? state.par.value() : 0),
   };
 
@@ -554,17 +582,44 @@ void DrawDisplayPanel(core::MachineState& state,
                   draw_list);
   }
 
+  const LampStripLayout& op_strip =
+      PanelLayout::kLampStrips[PanelLayout::kOpCodeStripIndex];
+  const LampStripLayout& operand_strip =
+      PanelLayout::kLampStrips[PanelLayout::kOperandStripIndex];
+  float op_width = LampStripWidth(op_strip);
+  float operand_width = LampStripWidth(operand_strip);
+  float op_label_y = op_strip.y + PanelLayout::kDisplayOpSubLabelOffsetY;
+  float op_label_x =
+      op_strip.x + op_width * 0.5f + PanelLayout::kDisplayOpCodeLowerLabelOffsetX;
+  float op_right_center_x =
+      op_strip.x + LampOffsetForIndex(op_strip, op_strip.bits - 1) +
+      PanelLayout::kLampSize * 0.5f;
+  float x_label_x = op_right_center_x + PanelLayout::kDisplayXLowerLabelOffsetX;
+  float mem_label_x =
+      operand_strip.x + operand_width * 0.5f + PanelLayout::kDisplayMemAddrLowerLabelOffsetX;
+
+  auto draw_centered = [&](const char* text, float x, float y) {
+    ImVec2 size = ImGui::CalcTextSize(text);
+    ImVec2 pos(layout_origin.x + (x - size.x * 0.5f) * scale,
+               layout_origin.y + y * scale);
+    draw_list->AddText(pos, Color(PanelLayout::kTextLight), text);
+  };
+  draw_centered(PanelLayout::kDisplayOpCodeLowerLabelText, op_label_x, op_label_y);
+  draw_centered(PanelLayout::kDisplayXLowerLabelText, x_label_x, op_label_y);
+  draw_centered(PanelLayout::kDisplayMemAddrLowerLabelText, mem_label_x, op_label_y);
+
   LampStripLayout countdown = PanelLayout::kLampStrips[PanelLayout::kCountdownStripIndex];
   LampStripLayout distributor = PanelLayout::kLampStrips[PanelLayout::kDistributorStripIndex];
   LampStripLayout prog_addr = PanelLayout::kLampStrips[PanelLayout::kProgramAddressStripIndex];
-  float bottom_y = panel_height_units - PanelLayout::kDisplayBottomMargin;
-  countdown.y = static_cast<int>(bottom_y);
-  distributor.y = static_cast<int>(bottom_y);
-  prog_addr.y = static_cast<int>(bottom_y);
+  float bottom_y = panel_height_units - PanelLayout::kDisplayBottomMargin -
+                   PanelLayout::kDisplayLabelBelowOffsetY;
+  countdown.y = bottom_y;
+  distributor.y = bottom_y;
+  prog_addr.y = bottom_y;
 
-  float w1 = strip_width(countdown);
-  float w2 = strip_width(distributor);
-  float w3 = strip_width(prog_addr);
+  float w1 = LampStripWidth(countdown);
+  float w2 = LampStripWidth(distributor);
+  float w3 = LampStripWidth(prog_addr);
   float total = w1 + w2 + w3;
   float spacing = (panel_width_units - total) / PanelLayout::kDisplayBottomSpacingSlots;
   if (spacing < PanelLayout::kDisplayBottomMinSpacing) {
@@ -573,9 +628,9 @@ void DrawDisplayPanel(core::MachineState& state,
   float x1 = spacing;
   float x2 = x1 + w1 + spacing;
   float x3 = x2 + w2 + spacing;
-  countdown.x = static_cast<int>(x1);
-  distributor.x = static_cast<int>(x2);
-  prog_addr.x = static_cast<int>(x3);
+  countdown.x = x1;
+  distributor.x = x2;
+  prog_addr.x = x3;
 
   DrawLampStrip(panel_origin, scale, countdown, lamp_values[6], lamp_test, draw_list);
   DrawLampStrip(panel_origin, scale, distributor, lamp_values[7], lamp_test, draw_list);
@@ -664,16 +719,14 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === INPUT SWITCHES ROW with decorative lines ===
-  // Draw INPUT label and lines
-  DrawHLine(PanelLayout::kInputHeaderLines[0].x1,
-            PanelLayout::kInputHeaderLines[0].x2,
-            PanelLayout::kInputHeaderLines[0].y, scale, origin, line_color,
-            PanelLayout::kInputHeaderLines[0].thickness, draw_list);
+  DrawGroupFrame(PanelLayout::kInputGroup.label,
+                 PanelLayout::kInputGroupLeftX,
+                 PanelLayout::kInputGroupRightX,
+                 PanelLayout::kInputLineY,
+                 PanelLayout::kInputLineBottomY,
+                 scale, origin, line_color,
+                 PanelLayout::kInputLineThickness, draw_list);
   DrawGroupLabel(PanelLayout::kInputGroup.label, scale, origin, draw_list, dark_text);
-  DrawHLine(PanelLayout::kInputHeaderLines[1].x1,
-            PanelLayout::kInputHeaderLines[1].x2,
-            PanelLayout::kInputHeaderLines[1].y, scale, origin, line_color,
-            PanelLayout::kInputHeaderLines[1].thickness, draw_list);
 
   for (size_t i = 0; i < PanelLayout::kInputGroup.toggles.size(); ++i) {
     const auto& toggle = PanelLayout::kInputGroup.toggles[i];
@@ -952,6 +1005,13 @@ void PanelView::Draw(core::MachineState& state) const {
   if (top_height + bottom_height + gap > available_height) {
     bottom_height = std::max(PanelLayout::kBottomHeightClampMin,
                              available_height - top_height - gap);
+  }
+  if (PanelLayout::kInputPanelHeightTrim > 0.0f &&
+      bottom_height > PanelLayout::kBottomHeightMin) {
+    float trim = std::min(PanelLayout::kInputPanelHeightTrim,
+                          bottom_height - PanelLayout::kBottomHeightMin);
+    bottom_height -= trim;
+    top_height = available_height - bottom_height - gap;
   }
 
   float display_x = PanelLayout::kPanelEdgeMargin;
