@@ -4,8 +4,10 @@
 #include <cctype>
 #include <cstring>
 #include <ctime>
+#include <filesystem>
 #include <sstream>
 #include <string>
+#include <system_error>
 #include <vector>
 
 #include <GLFW/glfw3.h>
@@ -51,6 +53,12 @@ int ClampMaxSteps(int steps) {
   return steps;
 }
 
+struct PanelFonts {
+  ImFont* ui = nullptr;
+  ImFont* input = nullptr;
+  ImFont* display = nullptr;
+};
+
 std::string RenderAscii(const std::vector<uint8_t>& data, size_t max_bytes) {
   size_t start = data.size() > max_bytes ? data.size() - max_bytes : 0;
   std::string out;
@@ -92,6 +100,43 @@ std::string AppendTimestamp(const std::string& path) {
   char stamp[32] = {};
   std::strftime(stamp, sizeof(stamp), "%Y%m%d_%H%M%S", &tm_snapshot);
   return base + "_" + stamp + ext;
+}
+
+ImFont* LoadFontOption(size_t index) {
+  ImGuiIO& io = ImGui::GetIO();
+  if (index >= PanelLayout::kFontOptions.size()) {
+    index = 0;
+  }
+  const auto& option = PanelLayout::kFontOptions[index];
+  ImFontConfig config;
+  config.SizePixels = option.size;
+  ImFont* font = nullptr;
+  if (option.path && option.path[0] != '\0') {
+    std::error_code ec;
+    if (std::filesystem::exists(option.path, ec)) {
+      font = io.Fonts->AddFontFromFileTTF(option.path, option.size);
+    }
+  }
+  if (!font) {
+    font = io.Fonts->AddFontDefault(&config);
+  }
+  if (font) {
+    font->Scale = option.scale;
+  }
+  return font;
+}
+
+PanelFonts LoadPanelFonts() {
+  ImGuiIO& io = ImGui::GetIO();
+  io.FontGlobalScale = 1.0f;
+
+  PanelFonts fonts;
+  fonts.ui = LoadFontOption(PanelLayout::kUiFontOptionIndex);
+  fonts.input = LoadFontOption(PanelLayout::kInputFontOptionIndex);
+  fonts.display = LoadFontOption(PanelLayout::kDisplayFontOptionIndex);
+
+  io.FontDefault = fonts.ui ? fonts.ui : (fonts.input ? fonts.input : fonts.display);
+  return fonts;
 }
 
 void StepClock(core::TimingEngine& timing,
@@ -912,13 +957,13 @@ int ImGuiApp::Run(core::MachineState& state,
   IMGUI_CHECKVERSION();
   ImGui::CreateContext();
   ImGui::StyleColorsDark();
-  ImGui::GetIO().FontGlobalScale = 1.2f;
+  PanelFonts panel_fonts = LoadPanelFonts();
 
   ImGui_ImplGlfw_InitForOpenGL(window, true);
   ImGui_ImplOpenGL2_Init();
 
   DebugPane debug_pane;
-  PanelView panel_view;
+  PanelView panel_view(panel_fonts.display, panel_fonts.input);
 
   while (!glfwWindowShouldClose(window)) {
     glfwPollEvents();

@@ -30,13 +30,19 @@ ImU32 Color(unsigned char r, unsigned char g, unsigned char b, unsigned char a =
   return IM_COL32(r, g, b, a);
 }
 
+ImU32 Color(const PanelLayout::ColorRGBA& color) {
+  return Color(color.r, color.g, color.b, color.a);
+}
+
 bool DrawMomentaryButton(const char* id,
                          const char* label,
                          const Rect& rect,
                          float scale,
                          const ImVec2& origin,
                          const ButtonStyle& style,
-                         ImDrawList* draw_list) {
+                         ImDrawList* draw_list,
+                         int label_offset_x = 0,
+                         int label_offset_y = 0) {
   ImVec2 min(origin.x + rect.x * scale, origin.y + rect.y * scale);
   ImVec2 max(min.x + rect.w * scale, min.y + rect.h * scale);
 
@@ -54,12 +60,16 @@ bool DrawMomentaryButton(const char* id,
     fill = style.hover;
   }
 
-  draw_list->AddRectFilled(min, max, fill, 6.0f * scale);
-  draw_list->AddRect(min, max, Color(18, 18, 18), 6.0f * scale, 0, 1.5f);
+  draw_list->AddRectFilled(min, max, fill, PanelLayout::kMomentaryButtonCornerRadius * scale);
+  draw_list->AddRect(min, max, Color(PanelLayout::kMomentaryButtonBorderColor),
+                     PanelLayout::kMomentaryButtonCornerRadius * scale, 0,
+                     PanelLayout::kMomentaryButtonBorderThickness);
 
   ImVec2 text_size = ImGui::CalcTextSize(label);
-  ImVec2 text_pos(min.x + (rect.w * scale - text_size.x) * 0.5f,
-                  min.y + (rect.h * scale - text_size.y) * 0.5f);
+  ImVec2 text_pos(min.x + (rect.w * scale - text_size.x) * 0.5f +
+                      label_offset_x * scale,
+                  min.y + (rect.h * scale - text_size.y) * 0.5f +
+                      label_offset_y * scale);
   draw_list->AddText(text_pos, style.text, label);
 
   return pressed;
@@ -88,8 +98,10 @@ bool DrawHoldButton(const char* id,
     fill = style.hover;
   }
 
-  draw_list->AddRectFilled(min, max, fill, 6.0f * scale);
-  draw_list->AddRect(min, max, Color(18, 18, 18), 6.0f * scale, 0, 1.5f);
+  draw_list->AddRectFilled(min, max, fill, PanelLayout::kMomentaryButtonCornerRadius * scale);
+  draw_list->AddRect(min, max, Color(PanelLayout::kMomentaryButtonBorderColor),
+                     PanelLayout::kMomentaryButtonCornerRadius * scale, 0,
+                     PanelLayout::kMomentaryButtonBorderThickness);
 
   ImVec2 text_size = ImGui::CalcTextSize(label);
   ImVec2 text_pos(min.x + (rect.w * scale - text_size.x) * 0.5f,
@@ -123,8 +135,9 @@ bool DrawToggleSwitch(const char* id,
     fill = style.border;
   }
 
-  draw_list->AddRectFilled(min, max, fill, 3.0f * scale);
-  draw_list->AddRect(min, max, style.border, 3.0f * scale, 0, 1.2f);
+  draw_list->AddRectFilled(min, max, fill, PanelLayout::kToggleCornerRadius * scale);
+  draw_list->AddRect(min, max, style.border, PanelLayout::kToggleCornerRadius * scale, 0,
+                     PanelLayout::kToggleBorderThickness);
 
   return clicked;
 }
@@ -133,6 +146,7 @@ bool DrawToggleWithLabel(const ToggleLayout& toggle,
                          float scale,
                          const ImVec2& origin,
                          bool on,
+                         float label_offset,
                          const ToggleStyle& style,
                          ImDrawList* draw_list) {
   char id[32];
@@ -141,8 +155,12 @@ bool DrawToggleWithLabel(const ToggleLayout& toggle,
   bool clicked = DrawToggleSwitch(id, toggle.rect, scale, origin, on, style, draw_list);
 
   ImVec2 text_size = ImGui::CalcTextSize(toggle.label);
-  float text_x = origin.x + (toggle.rect.x + (toggle.rect.w - text_size.x) * 0.5f) * scale;
-  float text_y = origin.y + (toggle.rect.y - 18.0f) * scale;
+  float text_x = origin.x +
+                 (toggle.rect.x + (toggle.rect.w - text_size.x) * 0.5f +
+                  toggle.label_offset_x) *
+                     scale;
+  float text_y = origin.y +
+                 (toggle.rect.y - label_offset + toggle.label_offset_y) * scale;
   draw_list->AddText(ImVec2(text_x, text_y), style.text, toggle.label);
   return clicked;
 }
@@ -151,6 +169,7 @@ bool DrawInputLampButton(const ToggleLayout& toggle,
                          float scale,
                          const ImVec2& origin,
                          bool on,
+                         float label_offset,
                          ImDrawList* draw_list) {
   ImVec2 min(origin.x + toggle.rect.x * scale, origin.y + toggle.rect.y * scale);
   ImVec2 max(min.x + toggle.rect.w * scale, min.y + toggle.rect.h * scale);
@@ -160,15 +179,21 @@ bool DrawInputLampButton(const ToggleLayout& toggle,
                                               toggle.rect.h * scale));
   bool clicked = ImGui::IsItemClicked();
 
-  ImU32 fill = on ? Color(255, 196, 64) : Color(50, 36, 22);
-  draw_list->AddRectFilled(min, max, fill, 2.0f * scale);
-  draw_list->AddRect(min, max, Color(26, 18, 12), 2.0f * scale, 0, 1.2f);
+  ImU32 fill = on ? Color(PanelLayout::kInputLampOn) : Color(PanelLayout::kInputLampOff);
+  draw_list->AddRectFilled(min, max, fill, PanelLayout::kLampCornerRadius * scale);
+  draw_list->AddRect(min, max, Color(PanelLayout::kInputLampBorder),
+                     PanelLayout::kLampCornerRadius * scale, 0,
+                     PanelLayout::kInputLampBorderThickness);
 
   ImVec2 text_size = ImGui::CalcTextSize(toggle.label);
-  float text_x = origin.x + (toggle.rect.x + (toggle.rect.w - text_size.x) * 0.5f) * scale;
-  float text_y = origin.y + (toggle.rect.y - 18.0f) * scale;
+  float text_x = origin.x +
+                 (toggle.rect.x + (toggle.rect.w - text_size.x) * 0.5f +
+                  toggle.label_offset_x) *
+                     scale;
+  float text_y = origin.y +
+                 (toggle.rect.y - label_offset + toggle.label_offset_y) * scale;
   // Dark text for cream background
-  draw_list->AddText(ImVec2(text_x, text_y), Color(40, 35, 30), toggle.label);
+  draw_list->AddText(ImVec2(text_x, text_y), Color(PanelLayout::kTextDark), toggle.label);
   return clicked;
 }
 
@@ -176,7 +201,7 @@ void DrawGroupLabel(const TextLabel& label,
                     float scale,
                     const ImVec2& origin,
                     ImDrawList* draw_list,
-                    ImU32 text_color = Color(230, 230, 230)) {
+                    ImU32 text_color = Color(PanelLayout::kTextLight)) {
   ImVec2 pos(origin.x + label.x * scale, origin.y + label.y * scale);
   draw_list->AddText(pos, text_color, label.label);
 }
@@ -254,8 +279,10 @@ bool DrawUnlabeledButton(const char* id,
     fill = style.hover;
   }
 
-  draw_list->AddRectFilled(min, max, fill, 4.0f * scale);
-  draw_list->AddRect(min, max, Color(30, 30, 30), 4.0f * scale, 0, 1.5f);
+  draw_list->AddRectFilled(min, max, fill, PanelLayout::kButtonCornerRadius * scale);
+  draw_list->AddRect(min, max, Color(PanelLayout::kButtonBorderColor),
+                     PanelLayout::kButtonCornerRadius * scale, 0,
+                     PanelLayout::kButtonBorderThickness);
 
   return pressed;
 }
@@ -283,8 +310,10 @@ bool DrawUnlabeledHoldButton(const char* id,
     fill = style.hover;
   }
 
-  draw_list->AddRectFilled(min, max, fill, 4.0f * scale);
-  draw_list->AddRect(min, max, Color(30, 30, 30), 4.0f * scale, 0, 1.5f);
+  draw_list->AddRectFilled(min, max, fill, PanelLayout::kButtonCornerRadius * scale);
+  draw_list->AddRect(min, max, Color(PanelLayout::kButtonBorderColor),
+                     PanelLayout::kButtonCornerRadius * scale, 0,
+                     PanelLayout::kButtonBorderThickness);
 
   return active;
 }
@@ -296,9 +325,11 @@ void DrawLabelAbove(const char* label,
                     float scale,
                     const ImVec2& origin,
                     ImU32 text_color,
-                    ImDrawList* draw_list) {
+                    ImDrawList* draw_list,
+                    float x_offset = 0.0f) {
   ImVec2 text_size = ImGui::CalcTextSize(label);
-  float text_x = origin.x + (rect.x + rect.w * 0.5f) * scale - text_size.x * 0.5f;
+  float text_x = origin.x + (rect.x + rect.w * 0.5f + x_offset) * scale -
+                 text_size.x * 0.5f;
   float text_y = origin.y + (rect.y - y_offset) * scale;
   draw_list->AddText(ImVec2(text_x, text_y), text_color, label);
 }
@@ -312,9 +343,11 @@ void DrawLampBox(const ImVec2& origin,
                  ImDrawList* draw_list) {
   ImVec2 min(origin.x + x * scale, origin.y + y * scale);
   ImVec2 max(min.x + size * scale, min.y + size * scale);
-  ImU32 fill = on ? Color(255, 196, 64) : Color(54, 38, 22);
-  draw_list->AddRectFilled(min, max, fill, 2.0f * scale);
-  draw_list->AddRect(min, max, Color(30, 20, 10), 2.0f * scale, 0, 1.5f);
+  ImU32 fill = on ? Color(PanelLayout::kLampOn) : Color(PanelLayout::kLampOff);
+  draw_list->AddRectFilled(min, max, fill, PanelLayout::kLampCornerRadius * scale);
+  draw_list->AddRect(min, max, Color(PanelLayout::kLampBorder),
+                     PanelLayout::kLampCornerRadius * scale, 0,
+                     PanelLayout::kLampBorderThickness);
 }
 
 void DrawLampStrip(const ImVec2& origin,
@@ -327,8 +360,9 @@ void DrawLampStrip(const ImVec2& origin,
   float gap = PanelLayout::kLampGap;
   float group_gap = PanelLayout::kLampGroupGap;
 
-  ImVec2 label_pos(origin.x + layout.x * scale, origin.y + (layout.y - 28) * scale);
-  draw_list->AddText(label_pos, Color(230, 230, 230), layout.label);
+  ImVec2 label_pos(origin.x + layout.x * scale,
+                   origin.y + (layout.y - PanelLayout::kLampStripLabelOffset) * scale);
+  draw_list->AddText(label_pos, Color(PanelLayout::kTextLight), layout.label);
 
   int bits = layout.bits;
   int gap_after = layout.gap_after;
@@ -347,8 +381,8 @@ void DrawLampStrip(const ImVec2& origin,
     std::snprintf(bit_label, sizeof(bit_label), "%d", bit);
     ImVec2 text_size = ImGui::CalcTextSize(bit_label);
     float text_x = origin.x + (x + (lamp - text_size.x) * 0.5f) * scale;
-    float text_y = origin.y + (y - 18.0f) * scale;
-    draw_list->AddText(ImVec2(text_x, text_y), Color(200, 200, 200), bit_label);
+    float text_y = origin.y + (y - PanelLayout::kLampBitLabelOffset) * scale;
+    draw_list->AddText(ImVec2(text_x, text_y), Color(PanelLayout::kTextMuted), bit_label);
   }
 }
 
@@ -368,9 +402,11 @@ void DrawIndicators(const ImVec2& origin,
                 size,
                 on,
                 draw_list);
-    ImVec2 text_pos(origin.x + (indicators[i].x + size + 8.0f) * scale,
-                    origin.y + (indicators[i].y - 2.0f) * scale);
-    draw_list->AddText(text_pos, Color(220, 220, 220), indicators[i].label);
+    ImVec2 text_pos(origin.x + (indicators[i].x + size + PanelLayout::kIndicatorLabelOffsetX) *
+                                      scale,
+                    origin.y +
+                        (indicators[i].y - PanelLayout::kIndicatorLabelOffsetY) * scale);
+    draw_list->AddText(text_pos, Color(PanelLayout::kTextIndicator), indicators[i].label);
   }
 }
 
@@ -384,7 +420,8 @@ void DrawPanelBackground(const ImVec2& origin,
   ImVec2 panel_max(origin.x + panel_size.x, origin.y + panel_size.y);
   draw_list->AddRectFilledMultiColor(origin, panel_max, top_left, top_right,
                                      bottom_right, bottom_left);
-  draw_list->AddRect(origin, panel_max, Color(18, 18, 18), 0.0f, 0, 2.0f);
+  draw_list->AddRect(origin, panel_max, Color(PanelLayout::kPanelBorderColor), 0.0f, 0,
+                     PanelLayout::kPanelBorderThickness);
 }
 
 void DrawDisplayPanel(core::MachineState& state,
@@ -466,35 +503,24 @@ void DrawDisplayPanel(core::MachineState& state,
   };
 
   // Decorative lines for display panel (matching historical panel)
-  ImU32 display_line_color = Color(180, 180, 180);
-
-  // Lines for top row (ACCUMULATOR and QUOTIENT)
-  DrawHLine(130.0f, 195.0f, 100.0f, scale, layout_origin, display_line_color, 1.0f, draw_list);
-  DrawHLine(370.0f, 420.0f, 100.0f, scale, layout_origin, display_line_color, 1.0f, draw_list);
-  DrawHLine(465.0f, 530.0f, 100.0f, scale, layout_origin, display_line_color, 1.0f, draw_list);
-
-  // Lines for second row (BUFFER and INDEX)
-  DrawHLine(130.0f, 215.0f, 180.0f, scale, layout_origin, display_line_color, 1.0f, draw_list);
-  DrawHLine(370.0f, 420.0f, 180.0f, scale, layout_origin, display_line_color, 1.0f, draw_list);
-  DrawHLine(465.0f, 530.0f, 180.0f, scale, layout_origin, display_line_color, 1.0f, draw_list);
-
-  // Lines for third row (OP CODE and MEM ADDR)
-  DrawHLine(130.0f, 235.0f, 270.0f, scale, layout_origin, display_line_color, 1.0f, draw_list);
-  DrawHLine(400.0f, 420.0f, 270.0f, scale, layout_origin, display_line_color, 1.0f, draw_list);
-  DrawHLine(465.0f, 550.0f, 270.0f, scale, layout_origin, display_line_color, 1.0f, draw_list);
+  ImU32 display_line_color = Color(PanelLayout::kDisplayLineColor);
+  for (const auto& line : PanelLayout::kDisplayPanelLines) {
+    DrawHLine(line.x1, line.x2, line.y, scale, layout_origin,
+              display_line_color, line.thickness, draw_list);
+  }
 
   for (size_t i = 0; i < PanelLayout::kLampStrips.size(); ++i) {
-    if (i >= 6) {
+    if (i >= static_cast<size_t>(PanelLayout::kTopLampStripCount)) {
       break;
     }
     DrawLampStrip(layout_origin, scale, PanelLayout::kLampStrips[i], lamp_values[i], lamp_test,
                   draw_list);
   }
 
-  LampStripLayout countdown = PanelLayout::kLampStrips[6];
-  LampStripLayout distributor = PanelLayout::kLampStrips[7];
-  LampStripLayout prog_addr = PanelLayout::kLampStrips[8];
-  float bottom_y = panel_height_units - 40.0f;
+  LampStripLayout countdown = PanelLayout::kLampStrips[PanelLayout::kCountdownStripIndex];
+  LampStripLayout distributor = PanelLayout::kLampStrips[PanelLayout::kDistributorStripIndex];
+  LampStripLayout prog_addr = PanelLayout::kLampStrips[PanelLayout::kProgramAddressStripIndex];
+  float bottom_y = panel_height_units - PanelLayout::kDisplayBottomMargin;
   countdown.y = static_cast<int>(bottom_y);
   distributor.y = static_cast<int>(bottom_y);
   prog_addr.y = static_cast<int>(bottom_y);
@@ -503,9 +529,9 @@ void DrawDisplayPanel(core::MachineState& state,
   float w2 = strip_width(distributor);
   float w3 = strip_width(prog_addr);
   float total = w1 + w2 + w3;
-  float spacing = (panel_width_units - total) / 4.0f;
-  if (spacing < 10.0f) {
-    spacing = 10.0f;
+  float spacing = (panel_width_units - total) / PanelLayout::kDisplayBottomSpacingSlots;
+  if (spacing < PanelLayout::kDisplayBottomMinSpacing) {
+    spacing = PanelLayout::kDisplayBottomMinSpacing;
   }
   float x1 = spacing;
   float x2 = x1 + w1 + spacing;
@@ -524,37 +550,53 @@ void DrawInputPanel(core::MachineState& state,
                     float scale,
                     ImDrawList* draw_list) {
   // Light cream/white keypad buttons with dark text (matching historical panel)
-  ButtonStyle keypad_style{Color(235, 230, 220), Color(245, 240, 230), Color(215, 210, 200),
-                           Color(30, 30, 30)};
+  ButtonStyle keypad_style{Color(PanelLayout::kKeypadButtonBase),
+                           Color(PanelLayout::kKeypadButtonHover),
+                           Color(PanelLayout::kKeypadButtonActive),
+                           Color(PanelLayout::kKeypadButtonText)};
   // Default control button style
-  ButtonStyle control_style{Color(180, 175, 165), Color(200, 195, 185), Color(160, 155, 145),
-                            Color(30, 30, 30)};
+  ButtonStyle control_style{Color(PanelLayout::kControlButtonBase),
+                            Color(PanelLayout::kControlButtonHover),
+                            Color(PanelLayout::kControlButtonActive),
+                            Color(PanelLayout::kControlButtonText)};
   // Colored control buttons matching historical panel
-  ButtonStyle clear_style{Color(220, 200, 80), Color(240, 220, 100), Color(190, 170, 60),
-                          Color(30, 30, 30)};
-  ButtonStyle stop_style{Color(200, 80, 80), Color(220, 100, 100), Color(170, 60, 60),
-                         Color(255, 255, 255)};
-  ButtonStyle start_style{Color(80, 160, 80), Color(100, 180, 100), Color(60, 140, 60),
-                          Color(255, 255, 255)};
+  ButtonStyle clear_style{Color(PanelLayout::kClearButtonBase),
+                          Color(PanelLayout::kClearButtonHover),
+                          Color(PanelLayout::kClearButtonActive),
+                          Color(PanelLayout::kClearButtonText)};
+  ButtonStyle stop_style{Color(PanelLayout::kStopButtonBase),
+                         Color(PanelLayout::kStopButtonHover),
+                         Color(PanelLayout::kStopButtonActive),
+                         Color(PanelLayout::kStopButtonText)};
+  ButtonStyle start_style{Color(PanelLayout::kStartButtonBase),
+                          Color(PanelLayout::kStartButtonHover),
+                          Color(PanelLayout::kStartButtonActive),
+                          Color(PanelLayout::kStartButtonText)};
   // Toggle switches with darker appearance
-  ToggleStyle toggle_style{Color(140, 135, 125), Color(160, 150, 130), Color(80, 75, 70),
-                           Color(40, 40, 40), Color(30, 30, 30)};
+  ToggleStyle toggle_style{Color(PanelLayout::kToggleBase),
+                           Color(PanelLayout::kToggleOn),
+                           Color(PanelLayout::kToggleOff),
+                           Color(PanelLayout::kToggleBorder),
+                           Color(PanelLayout::kToggleText)};
   // Dark text color for cream background
-  ImU32 dark_text = Color(40, 35, 30);
+  ImU32 dark_text = Color(PanelLayout::kTextDark);
   // Line color for decorations
-  ImU32 line_color = Color(60, 55, 50);
+  ImU32 line_color = Color(PanelLayout::kInputLineColor);
 
   // === LEFT SIDE: POWER, COM-TRAN TEN, LAMP TEST ===
 
   // POWER - label above switch
-  DrawStackedText(88.0f, 145.0f, "POWER", nullptr, scale, origin, dark_text, draw_list);
+  DrawStackedText(PanelLayout::kPowerLabelX, PanelLayout::kPowerLabelY,
+                  PanelLayout::kPowerLabelText, nullptr, scale, origin, dark_text, draw_list);
   if (DrawToggleSwitch("power_switch", PanelLayout::kPower.rect, scale, origin,
                        state.panel_input.power_on, toggle_style, draw_list)) {
     state.panel_input.power_on = !state.panel_input.power_on;
   }
 
   // LAMP TEST - stacked text above button
-  DrawStackedText(90.0f, 340.0f, "LAMP", "TEST", scale, origin, dark_text, draw_list);
+  DrawStackedText(PanelLayout::kLampTestLabelX, PanelLayout::kLampTestLabelY,
+                  PanelLayout::kLampTestLabelLine1, PanelLayout::kLampTestLabelLine2, scale,
+                  origin, dark_text, draw_list);
   state.panel_input.lamp_test = DrawUnlabeledHoldButton("lamp_test",
                                                         PanelLayout::kLampTest.rect, scale, origin,
                                                         control_style, draw_list);
@@ -565,7 +607,8 @@ void DrawInputPanel(core::MachineState& state,
     char label[2] = {key.label, 0};
     char id[16];
     std::snprintf(id, sizeof(id), "key_%c", key.label);
-    if (DrawMomentaryButton(id, label, key.rect, scale, origin, keypad_style, draw_list)) {
+    if (DrawMomentaryButton(id, label, key.rect, scale, origin, keypad_style, draw_list,
+                            key.label_offset_x, key.label_offset_y)) {
       uint8_t value = 0;
       if (key.label >= '0' && key.label <= '9') {
         value = static_cast<uint8_t>(key.label - '0');
@@ -585,60 +628,80 @@ void DrawInputPanel(core::MachineState& state,
 
   // === INPUT SWITCHES ROW with decorative lines ===
   // Draw INPUT label and lines
-  DrawHLine(180.0f, 310.0f, 35.0f, scale, origin, line_color, 1.5f, draw_list);
-  DrawGroupLabel(PanelLayout::kInputLabel, scale, origin, draw_list, dark_text);
-  DrawHLine(400.0f, 550.0f, 35.0f, scale, origin, line_color, 1.5f, draw_list);
+  DrawHLine(PanelLayout::kInputHeaderLines[0].x1,
+            PanelLayout::kInputHeaderLines[0].x2,
+            PanelLayout::kInputHeaderLines[0].y, scale, origin, line_color,
+            PanelLayout::kInputHeaderLines[0].thickness, draw_list);
+  DrawGroupLabel(PanelLayout::kInputGroup.label, scale, origin, draw_list, dark_text);
+  DrawHLine(PanelLayout::kInputHeaderLines[1].x1,
+            PanelLayout::kInputHeaderLines[1].x2,
+            PanelLayout::kInputHeaderLines[1].y, scale, origin, line_color,
+            PanelLayout::kInputHeaderLines[1].thickness, draw_list);
 
-  for (size_t i = 0; i < PanelLayout::kInputToggles.size(); ++i) {
-    const auto& toggle = PanelLayout::kInputToggles[i];
+  for (size_t i = 0; i < PanelLayout::kInputGroup.toggles.size(); ++i) {
+    const auto& toggle = PanelLayout::kInputGroup.toggles[i];
     bool on = (state.panel_input.input_switches >> (9 - i)) & 0x1u;
     bool lit = lamp_test || on;
-    if (DrawInputLampButton(toggle, scale, origin, lit, draw_list)) {
+    if (DrawInputLampButton(toggle, scale, origin, lit,
+                            PanelLayout::kInputGroup.label_offset, draw_list)) {
       uint16_t mask = static_cast<uint16_t>(1u << (9 - i));
       state.panel_input.input_switches ^= mask;
     }
   }
 
   // === RESET button ===
-  DrawLabelAbove("RESET", PanelLayout::kReset.rect, 16.0f, scale, origin, dark_text, draw_list);
+  DrawLabelAbove(PanelLayout::kResetLabelText, PanelLayout::kReset.rect,
+                 PanelLayout::kResetLabelOffsetY, scale, origin, dark_text, draw_list,
+                 PanelLayout::kResetLabelOffsetX);
   if (DrawUnlabeledButton("reset", PanelLayout::kReset.rect, scale, origin, control_style,
                           draw_list)) {
     state.panel_input.reset = true;
   }
 
   // === I/O MODE section (Row 1, left) ===
-  DrawHLine(540.0f, 570.0f, 110.0f, scale, origin, line_color, 1.5f, draw_list);
-  DrawGroupLabel(PanelLayout::kIoModeLabel, scale, origin, draw_list, dark_text);
-  DrawHLine(700.0f, 750.0f, 110.0f, scale, origin, line_color, 1.5f, draw_list);
-  for (size_t i = 0; i < PanelLayout::kIoModeToggles.size(); ++i) {
+  DrawHLine(PanelLayout::kIoModeLines[0].x1,
+            PanelLayout::kIoModeLines[0].x2,
+            PanelLayout::kIoModeLines[0].y, scale, origin, line_color,
+            PanelLayout::kIoModeLines[0].thickness, draw_list);
+  DrawGroupLabel(PanelLayout::kIoModeGroup.label, scale, origin, draw_list, dark_text);
+  DrawHLine(PanelLayout::kIoModeLines[1].x1,
+            PanelLayout::kIoModeLines[1].x2,
+            PanelLayout::kIoModeLines[1].y, scale, origin, line_color,
+            PanelLayout::kIoModeLines[1].thickness, draw_list);
+  for (size_t i = 0; i < PanelLayout::kIoModeGroup.toggles.size(); ++i) {
     bool on = state.panel_input.io_mode == i;
     bool lit = lamp_test || on;
-    if (DrawToggleWithLabel(PanelLayout::kIoModeToggles[i], scale, origin, lit, toggle_style,
-                            draw_list)) {
+    if (DrawToggleWithLabel(PanelLayout::kIoModeGroup.toggles[i], scale, origin, lit,
+                            PanelLayout::kIoModeGroup.label_offset, toggle_style, draw_list)) {
       state.panel_input.io_mode = static_cast<uint8_t>(i);
     }
   }
 
-  // === MODE section (Row 2, left) ===
-  DrawHLine(540.0f, 585.0f, 190.0f, scale, origin, line_color, 1.5f, draw_list);
-  DrawGroupLabel(PanelLayout::kModeLabel, scale, origin, draw_list, dark_text);
-  DrawHLine(660.0f, 750.0f, 190.0f, scale, origin, line_color, 1.5f, draw_list);
-  for (size_t i = 0; i < PanelLayout::kModeToggles.size(); ++i) {
-    bool on = state.panel_input.mode == i;
-    bool lit = lamp_test || on;
-    if (DrawToggleWithLabel(PanelLayout::kModeToggles[i], scale, origin, lit, toggle_style,
-                            draw_list)) {
-      state.panel_input.mode = static_cast<uint8_t>(i);
+  // === MODE section (Row 2, includes RPT/SINGLE) ===
+  DrawHLine(PanelLayout::kModeLines[0].x1,
+            PanelLayout::kModeLines[0].x2,
+            PanelLayout::kModeLines[0].y, scale, origin, line_color,
+            PanelLayout::kModeLines[0].thickness, draw_list);
+  DrawGroupLabel(PanelLayout::kModeGroup.label, scale, origin, draw_list, dark_text);
+  DrawHLine(PanelLayout::kModeLines[1].x1,
+            PanelLayout::kModeLines[1].x2,
+            PanelLayout::kModeLines[1].y, scale, origin, line_color,
+            PanelLayout::kModeLines[1].thickness, draw_list);
+  for (size_t i = 0; i < PanelLayout::kModeGroup.toggles.size(); ++i) {
+    bool on = false;
+    if (i < 4) {
+      on = state.panel_input.mode == i;
+    } else if (i == 4) {
+      on = state.panel_input.rpt;
+    } else {
+      on = state.panel_input.sense;
     }
-  }
-
-  // RPT and SINGLE
-  for (size_t i = 0; i < PanelLayout::kRptSenseToggles.size(); ++i) {
-    bool on = (i == 0) ? state.panel_input.rpt : state.panel_input.sense;
     bool lit = lamp_test || on;
-    if (DrawToggleWithLabel(PanelLayout::kRptSenseToggles[i], scale, origin, lit, toggle_style,
-                            draw_list)) {
-      if (i == 0) {
+    if (DrawToggleWithLabel(PanelLayout::kModeGroup.toggles[i], scale, origin, lit,
+                            PanelLayout::kModeGroup.label_offset, toggle_style, draw_list)) {
+      if (i < 4) {
+        state.panel_input.mode = static_cast<uint8_t>(i);
+      } else if (i == 4) {
         state.panel_input.rpt = !state.panel_input.rpt;
       } else {
         state.panel_input.sense = !state.panel_input.sense;
@@ -647,10 +710,16 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === ERROR BYPASS section (Row 3, left) ===
-  DrawHLine(480.0f, 530.0f, 280.0f, scale, origin, line_color, 1.5f, draw_list);
-  DrawGroupLabel(PanelLayout::kErrorBypassLabel, scale, origin, draw_list, dark_text);
-  DrawHLine(680.0f, 750.0f, 280.0f, scale, origin, line_color, 1.5f, draw_list);
-  for (size_t i = 0; i < PanelLayout::kErrorBypassToggles.size(); ++i) {
+  DrawHLine(PanelLayout::kErrorBypassLines[0].x1,
+            PanelLayout::kErrorBypassLines[0].x2,
+            PanelLayout::kErrorBypassLines[0].y, scale, origin, line_color,
+            PanelLayout::kErrorBypassLines[0].thickness, draw_list);
+  DrawGroupLabel(PanelLayout::kErrorBypassGroup.label, scale, origin, draw_list, dark_text);
+  DrawHLine(PanelLayout::kErrorBypassLines[1].x1,
+            PanelLayout::kErrorBypassLines[1].x2,
+            PanelLayout::kErrorBypassLines[1].y, scale, origin, line_color,
+            PanelLayout::kErrorBypassLines[1].thickness, draw_list);
+  for (size_t i = 0; i < PanelLayout::kErrorBypassGroup.toggles.size(); ++i) {
     bool on = false;
     if (i == 0) {
       on = state.panel_input.error_inst;
@@ -660,8 +729,9 @@ void DrawInputPanel(core::MachineState& state,
       on = state.panel_input.error_div;
     }
     bool lit = lamp_test || on;
-    if (DrawToggleWithLabel(PanelLayout::kErrorBypassToggles[i], scale, origin, lit,
-                            toggle_style, draw_list)) {
+    if (DrawToggleWithLabel(PanelLayout::kErrorBypassGroup.toggles[i], scale, origin, lit,
+                            PanelLayout::kErrorBypassGroup.label_offset, toggle_style,
+                            draw_list)) {
       if (i == 0) {
         state.panel_input.error_inst = !state.panel_input.error_inst;
       } else if (i == 1) {
@@ -672,16 +742,33 @@ void DrawInputPanel(core::MachineState& state,
     }
   }
 
-  // === I/O section (READ/WRITE INSTR/BLOCK) ===
-  DrawGroupLabel(PanelLayout::kIoLabel, scale, origin, draw_list, dark_text);
+  // === I/O section (READ/INTRPT, WRITE/BLOCK) ===
+  DrawGroupLabel(PanelLayout::kIoGroup.label, scale, origin, draw_list, dark_text);
   bool read_intrp = state.panel_input.io_read && state.panel_input.io_intrp;
   bool write_block = state.panel_input.io_write && state.panel_input.io_block;
 
+  auto draw_io_label = [&](const ToggleLayout& toggle,
+                           const char* line1,
+                           const char* line2,
+                           int offset_y) {
+    float line_height = ImGui::GetTextLineHeight();
+    float label_y =
+        toggle.rect.y - PanelLayout::kButtonLabelOffsetY - line_height + offset_y;
+    float label_x = toggle.rect.x + (toggle.rect.w * 0.5f);
+    DrawStackedText(label_x, label_y, line1, line2, scale, origin, dark_text, draw_list);
+  };
+
+  const ToggleLayout& io_read = PanelLayout::kIoGroup.toggles[0];
+  const ToggleLayout& io_write = PanelLayout::kIoGroup.toggles[1];
+
+  draw_io_label(io_read, PanelLayout::kIoReadLabelLine1, PanelLayout::kIoReadLabelLine2,
+                PanelLayout::kIoReadLabelOffsetY);
+  draw_io_label(io_write, PanelLayout::kIoWriteLabelLine1, PanelLayout::kIoWriteLabelLine2,
+                PanelLayout::kIoWriteLabelOffsetY);
+
   bool read_lit = lamp_test || read_intrp;
-  if (DrawToggleWithLabel(PanelLayout::kIoToggles[0], scale, origin, read_lit,
-                          toggle_style, draw_list) ||
-      DrawToggleWithLabel(PanelLayout::kIoToggles[2], scale, origin, read_lit,
-                          toggle_style, draw_list)) {
+  if (DrawToggleSwitch("io_read_intrp", io_read.rect, scale, origin, read_lit,
+                       toggle_style, draw_list)) {
     read_intrp = !read_intrp;
     state.panel_input.io_read = read_intrp;
     state.panel_input.io_intrp = read_intrp;
@@ -693,10 +780,8 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   bool write_lit = lamp_test || write_block;
-  if (DrawToggleWithLabel(PanelLayout::kIoToggles[1], scale, origin, write_lit,
-                          toggle_style, draw_list) ||
-      DrawToggleWithLabel(PanelLayout::kIoToggles[3], scale, origin, write_lit,
-                          toggle_style, draw_list)) {
+  if (DrawToggleSwitch("io_write_block", io_write.rect, scale, origin, write_lit,
+                       toggle_style, draw_list)) {
     write_block = !write_block;
     state.panel_input.io_write = write_block;
     state.panel_input.io_block = write_block;
@@ -707,12 +792,18 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === CONTROL section (Row 1, right) ===
-  DrawHLine(765.0f, 795.0f, 110.0f, scale, origin, line_color, 1.5f, draw_list);
-  DrawGroupLabel(PanelLayout::kControlLabel, scale, origin, draw_list, dark_text);
-  DrawHLine(895.0f, 940.0f, 110.0f, scale, origin, line_color, 1.5f, draw_list);
+  DrawHLine(PanelLayout::kControlLines[0].x1,
+            PanelLayout::kControlLines[0].x2,
+            PanelLayout::kControlLines[0].y, scale, origin, line_color,
+            PanelLayout::kControlLines[0].thickness, draw_list);
+  DrawGroupLabel(PanelLayout::kControlGroup.label, scale, origin, draw_list, dark_text);
+  DrawHLine(PanelLayout::kControlLines[1].x1,
+            PanelLayout::kControlLines[1].x2,
+            PanelLayout::kControlLines[1].y, scale, origin, line_color,
+            PanelLayout::kControlLines[1].thickness, draw_list);
 
   // Draw control buttons with labels above and individual colors
-  for (const auto& control : PanelLayout::kControls) {
+  for (const auto& control : PanelLayout::kControlGroup.controls) {
     char id[32];
     std::snprintf(id, sizeof(id), "control_%s", control.name);
     const ButtonStyle* btn_style = &control_style;
@@ -724,7 +815,9 @@ void DrawInputPanel(core::MachineState& state,
       btn_style = &start_style;
     }
     // Draw label above button
-    DrawLabelAbove(control.name, control.rect, 18.0f, scale, origin, dark_text, draw_list);
+    DrawLabelAbove(control.name, control.rect,
+                   PanelLayout::kControlGroup.label_offset + control.label_offset_y,
+                   scale, origin, dark_text, draw_list, control.label_offset_x);
     if (DrawUnlabeledButton(id, control.rect, scale, origin, *btn_style, draw_list)) {
       if (std::strcmp(control.name, "START") == 0) {
         state.panel_input.start = true;
@@ -737,12 +830,13 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === LOAD section - register load buttons ===
-  DrawGroupLabel(PanelLayout::kRegisterLoadLabel, scale, origin, draw_list, dark_text);
-  for (const auto& load : PanelLayout::kRegisterLoads) {
+  DrawGroupLabel(PanelLayout::kRegisterLoadGroup.label, scale, origin, draw_list, dark_text);
+  for (const auto& load : PanelLayout::kRegisterLoadGroup.buttons) {
     char id[32];
     std::snprintf(id, sizeof(id), "load_%s", load.name);
     // Use buttons with internal labels (matching historical panel style)
-    if (DrawMomentaryButton(id, load.name, load.rect, scale, origin, control_style, draw_list)) {
+    if (DrawMomentaryButton(id, load.name, load.rect, scale, origin, control_style, draw_list,
+                            load.label_offset_x, load.label_offset_y)) {
       state.panel_input.load_pressed = true;
       if (std::strcmp(load.name, "A") == 0) {
         state.panel_input.load_target = core::LoadTarget::Accumulator;
@@ -767,12 +861,13 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === MEMORY section (RD WT) ===
-  DrawGroupLabel(PanelLayout::kMemoryLabel, scale, origin, draw_list, dark_text);
-  for (size_t i = 0; i < PanelLayout::kMemoryToggles.size(); ++i) {
+  DrawGroupLabel(PanelLayout::kMemoryGroup.label, scale, origin, draw_list, dark_text);
+  for (size_t i = 0; i < PanelLayout::kMemoryGroup.toggles.size(); ++i) {
     bool on = (i == 0) ? state.panel_input.mem_read : state.panel_input.mem_write;
     bool lit = lamp_test || on;
-    if (DrawToggleWithLabel(PanelLayout::kMemoryToggles[i], scale, origin, lit,
-                            toggle_style, draw_list)) {
+    if (DrawToggleWithLabel(PanelLayout::kMemoryGroup.toggles[i], scale, origin, lit,
+                            PanelLayout::kMemoryGroup.label_offset, toggle_style,
+                            draw_list)) {
       if (i == 0) {
         state.panel_input.mem_read = !state.panel_input.mem_read;
         if (state.panel_input.mem_read) {
@@ -789,29 +884,39 @@ void DrawInputPanel(core::MachineState& state,
 
   // === BRANDING ===
   // COM-TRAN TEN - prominent branding on left side below POWER
-  DrawStackedText(88.0f, 260.0f, "COM-TRAN", "TEN", scale, origin, dark_text, draw_list);
+  DrawStackedText(PanelLayout::kBrandLabelX, PanelLayout::kBrandLabelY,
+                  PanelLayout::kBrandLabelText, nullptr, scale, origin, dark_text, draw_list);
   // DIGIAC corporation - top right corner (above RESET)
-  draw_list->AddText(ImVec2(origin.x + 840.0f * scale, origin.y + 35.0f * scale),
-                     dark_text, "DIGIAC corporation");
+  draw_list->AddText(ImVec2(origin.x + PanelLayout::kDigiaLabelX * scale,
+                            origin.y + PanelLayout::kDigiaLabelY * scale),
+                     dark_text, PanelLayout::kDigiaLabelText);
 }
 
 }  // namespace
 
+PanelView::PanelView(ImFont* display_font, ImFont* input_font)
+    : display_font_(display_font), input_font_(input_font) {}
+
 void PanelView::Draw(core::MachineState& state) const {
   ImVec2 display = ImGui::GetIO().DisplaySize;
-  float right_column = 360.0f;
-  float panel_width = std::max(420.0f, display.x - right_column - 30.0f);
-  float available_height = std::max(520.0f, display.y - 40.0f);
-  float gap = 16.0f;
-  float top_height = std::max(240.0f, available_height * 0.42f);
-  float bottom_height = std::max(280.0f, available_height - top_height - gap);
+  float right_column = PanelLayout::kRightColumnWidth;
+  float panel_width = std::max(PanelLayout::kPanelWidthMin,
+                               display.x - right_column - PanelLayout::kPanelWidthPadding);
+  float available_height = std::max(PanelLayout::kPanelHeightMin,
+                                    display.y - PanelLayout::kPanelHeightPadding);
+  float gap = PanelLayout::kPanelGap;
+  float top_height = std::max(PanelLayout::kTopHeightMin,
+                              available_height * PanelLayout::kTopHeightRatio);
+  float bottom_height = std::max(PanelLayout::kBottomHeightMin,
+                                 available_height - top_height - gap);
   if (top_height + bottom_height + gap > available_height) {
-    bottom_height = std::max(200.0f, available_height - top_height - gap);
+    bottom_height = std::max(PanelLayout::kBottomHeightClampMin,
+                             available_height - top_height - gap);
   }
 
-  float display_x = 20.0f;
-  float input_x = 20.0f;
-  float display_y = 20.0f;
+  float display_x = PanelLayout::kPanelEdgeMargin;
+  float input_x = PanelLayout::kPanelEdgeMargin;
+  float display_y = PanelLayout::kPanelEdgeMargin;
   float input_y = display_y + top_height + gap;
 
   ImGui::SetNextWindowPos(ImVec2(input_x, input_y), ImGuiCond_Always);
@@ -821,24 +926,37 @@ void PanelView::Draw(core::MachineState& state) const {
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
+  if (input_font_) {
+    ImGui::PushFont(input_font_);
+  }
+
   ImVec2 input_origin = ImGui::GetCursorScreenPos();
   ImVec2 input_avail = ImGui::GetContentRegionAvail();
-  float input_margin = 14.0f;
-  float input_scale = std::min((input_avail.x - 2.0f * input_margin) / PanelLayout::kInputWidth,
-                               (input_avail.y - 2.0f * input_margin) / PanelLayout::kInputHeight);
-  input_scale = std::max(input_scale, 0.1f);
+  float input_margin = PanelLayout::kPanelInnerMargin;
+  float input_scale = std::min(
+      (input_avail.x - PanelLayout::kPanelInnerMarginScale * input_margin) /
+          PanelLayout::kInputWidth,
+      (input_avail.y - PanelLayout::kPanelInnerMarginScale * input_margin) /
+          PanelLayout::kInputHeight);
+  input_scale = std::max(input_scale, PanelLayout::kPanelScaleMin);
 
   ImVec2 input_layout_origin(input_origin.x + input_margin,
                              input_origin.y + input_margin);
   ImDrawList* input_draw_list = ImGui::GetWindowDrawList();
   // Cream/beige metal panel background matching historical panel
   DrawPanelBackground(input_origin, input_avail,
-                      Color(215, 205, 190), Color(210, 200, 185),
-                      Color(195, 185, 170), Color(200, 190, 175), input_draw_list);
+                      Color(PanelLayout::kInputPanelTopLeft),
+                      Color(PanelLayout::kInputPanelTopRight),
+                      Color(PanelLayout::kInputPanelBottomRight),
+                      Color(PanelLayout::kInputPanelBottomLeft),
+                      input_draw_list);
 
   DrawInputPanel(state, input_layout_origin, input_scale, input_draw_list);
 
   ImGui::Dummy(input_avail);
+  if (input_font_) {
+    ImGui::PopFont();
+  }
   ImGui::End();
 
   ImGui::SetNextWindowPos(ImVec2(display_x, display_y), ImGuiCond_Always);
@@ -848,12 +966,19 @@ void PanelView::Draw(core::MachineState& state) const {
                    ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize |
                    ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoBringToFrontOnFocus);
 
+  if (display_font_) {
+    ImGui::PushFont(display_font_);
+  }
+
   ImVec2 display_origin = ImGui::GetCursorScreenPos();
   ImVec2 display_avail = ImGui::GetContentRegionAvail();
-  float margin = 14.0f;
-  float display_scale = std::min((display_avail.x - 2.0f * margin) / PanelLayout::kDisplayWidth,
-                                 (display_avail.y - 2.0f * margin) / PanelLayout::kDisplayHeight);
-  display_scale = std::max(display_scale, 0.1f);
+  float margin = PanelLayout::kPanelInnerMargin;
+  float display_scale = std::min(
+      (display_avail.x - PanelLayout::kPanelInnerMarginScale * margin) /
+          PanelLayout::kDisplayWidth,
+      (display_avail.y - PanelLayout::kPanelInnerMarginScale * margin) /
+          PanelLayout::kDisplayHeight);
+  display_scale = std::max(display_scale, PanelLayout::kPanelScaleMin);
 
   float display_units_w = display_avail.x / display_scale;
   float display_units_h = display_avail.y / display_scale;
@@ -862,13 +987,19 @@ void PanelView::Draw(core::MachineState& state) const {
   ImDrawList* draw_list = ImGui::GetWindowDrawList();
   // Dark charcoal/slate background matching historical panel
   DrawPanelBackground(display_origin, display_avail,
-                      Color(50, 55, 60), Color(45, 50, 55),
-                      Color(35, 40, 45), Color(40, 45, 50), draw_list);
+                      Color(PanelLayout::kDisplayPanelTopLeft),
+                      Color(PanelLayout::kDisplayPanelTopRight),
+                      Color(PanelLayout::kDisplayPanelBottomRight),
+                      Color(PanelLayout::kDisplayPanelBottomLeft),
+                      draw_list);
 
   DrawDisplayPanel(state, display_layout_origin, display_origin, display_scale,
                    display_units_w, display_units_h, draw_list);
 
   ImGui::Dummy(display_avail);
+  if (display_font_) {
+    ImGui::PopFont();
+  }
   ImGui::End();
 }
 
