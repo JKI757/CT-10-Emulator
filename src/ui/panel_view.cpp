@@ -255,6 +255,43 @@ void DrawVLine(float x, float y1, float y2,
   draw_list->AddLine(p1, p2, color, thickness);
 }
 
+void DrawGroupFrame(const TextLabel& label,
+                    float group_left,
+                    float group_right,
+                    float line_y,
+                    float bottom_y,
+                    float scale,
+                    const ImVec2& origin,
+                    ImU32 color,
+                    float thickness,
+                    ImDrawList* draw_list) {
+  ImVec2 label_size = ImGui::CalcTextSize(label.label);
+  float label_left = static_cast<float>(label.x);
+  float scale_inv = (scale > 0.0f) ? (1.0f / scale) : 1.0f;
+  float label_right = label_left + label_size.x * scale_inv;
+  float left_edge = group_left + PanelLayout::kGroupLineEdgePad;
+  float right_edge = group_right - PanelLayout::kGroupLineEdgePad;
+  float left_end = label_left - PanelLayout::kGroupLineLabelPad;
+  float right_start = label_right + PanelLayout::kGroupLineLabelPad;
+
+  if (left_end > left_edge) {
+    DrawHLine(left_edge, left_end, line_y, scale, origin, color, thickness, draw_list);
+  }
+  if (right_edge > right_start) {
+    DrawHLine(right_start, right_edge, line_y, scale, origin, color, thickness, draw_list);
+  }
+
+  DrawVLine(left_edge, line_y, bottom_y, scale, origin, color, thickness, draw_list);
+  DrawVLine(right_edge, line_y, bottom_y, scale, origin, color, thickness, draw_list);
+  if (PanelLayout::kGroupLineCapLength > 0.0f) {
+    float cap = PanelLayout::kGroupLineCapLength;
+    DrawHLine(left_edge, left_edge + cap, bottom_y, scale, origin, color,
+              thickness, draw_list);
+    DrawHLine(right_edge - cap, right_edge, bottom_y, scale, origin, color,
+              thickness, draw_list);
+  }
+}
+
 // Draw a button without internal label (label drawn separately)
 bool DrawUnlabeledButton(const char* id,
                          const Rect& rect,
@@ -659,15 +696,14 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === I/O MODE section (Row 1, left) ===
-  DrawHLine(PanelLayout::kIoModeLines[0].x1,
-            PanelLayout::kIoModeLines[0].x2,
-            PanelLayout::kIoModeLines[0].y, scale, origin, line_color,
-            PanelLayout::kIoModeLines[0].thickness, draw_list);
+  DrawGroupFrame(PanelLayout::kIoModeGroup.label,
+                 PanelLayout::kIoModeGroupLeftX,
+                 PanelLayout::kIoModeGroupRightX,
+                 PanelLayout::kIoModeLineY,
+                 PanelLayout::kIoModeLineBottomY,
+                 scale, origin, line_color,
+                 PanelLayout::kSectionLineThickness, draw_list);
   DrawGroupLabel(PanelLayout::kIoModeGroup.label, scale, origin, draw_list, dark_text);
-  DrawHLine(PanelLayout::kIoModeLines[1].x1,
-            PanelLayout::kIoModeLines[1].x2,
-            PanelLayout::kIoModeLines[1].y, scale, origin, line_color,
-            PanelLayout::kIoModeLines[1].thickness, draw_list);
   for (size_t i = 0; i < PanelLayout::kIoModeGroup.toggles.size(); ++i) {
     bool on = state.panel_input.io_mode == i;
     bool lit = lamp_test || on;
@@ -678,15 +714,14 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === MODE section (Row 2, includes RPT/SINGLE) ===
-  DrawHLine(PanelLayout::kModeLines[0].x1,
-            PanelLayout::kModeLines[0].x2,
-            PanelLayout::kModeLines[0].y, scale, origin, line_color,
-            PanelLayout::kModeLines[0].thickness, draw_list);
+  DrawGroupFrame(PanelLayout::kModeGroup.label,
+                 PanelLayout::kModeGroupLeftX,
+                 PanelLayout::kModeGroupRightX,
+                 PanelLayout::kModeLineY,
+                 PanelLayout::kModeLineBottomY,
+                 scale, origin, line_color,
+                 PanelLayout::kSectionLineThickness, draw_list);
   DrawGroupLabel(PanelLayout::kModeGroup.label, scale, origin, draw_list, dark_text);
-  DrawHLine(PanelLayout::kModeLines[1].x1,
-            PanelLayout::kModeLines[1].x2,
-            PanelLayout::kModeLines[1].y, scale, origin, line_color,
-            PanelLayout::kModeLines[1].thickness, draw_list);
   for (size_t i = 0; i < PanelLayout::kModeGroup.toggles.size(); ++i) {
     bool on = false;
     if (i < 4) {
@@ -710,15 +745,14 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === ERROR BYPASS section (Row 3, left) ===
-  DrawHLine(PanelLayout::kErrorBypassLines[0].x1,
-            PanelLayout::kErrorBypassLines[0].x2,
-            PanelLayout::kErrorBypassLines[0].y, scale, origin, line_color,
-            PanelLayout::kErrorBypassLines[0].thickness, draw_list);
+  DrawGroupFrame(PanelLayout::kErrorBypassGroup.label,
+                 PanelLayout::kErrorBypassGroupLeftX,
+                 PanelLayout::kErrorBypassGroupRightX,
+                 PanelLayout::kErrorBypassLineY,
+                 PanelLayout::kErrorBypassLineBottomY,
+                 scale, origin, line_color,
+                 PanelLayout::kSectionLineThickness, draw_list);
   DrawGroupLabel(PanelLayout::kErrorBypassGroup.label, scale, origin, draw_list, dark_text);
-  DrawHLine(PanelLayout::kErrorBypassLines[1].x1,
-            PanelLayout::kErrorBypassLines[1].x2,
-            PanelLayout::kErrorBypassLines[1].y, scale, origin, line_color,
-            PanelLayout::kErrorBypassLines[1].thickness, draw_list);
   for (size_t i = 0; i < PanelLayout::kErrorBypassGroup.toggles.size(); ++i) {
     bool on = false;
     if (i == 0) {
@@ -743,6 +777,13 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === I/O section (READ/INTRPT, WRITE/BLOCK) ===
+  DrawGroupFrame(PanelLayout::kIoGroup.label,
+                 PanelLayout::kIoGroupLeftX,
+                 PanelLayout::kIoGroupRightX,
+                 PanelLayout::kIoLineY,
+                 PanelLayout::kIoLineBottomY,
+                 scale, origin, line_color,
+                 PanelLayout::kSectionLineThickness, draw_list);
   DrawGroupLabel(PanelLayout::kIoGroup.label, scale, origin, draw_list, dark_text);
   bool read_intrp = state.panel_input.io_read && state.panel_input.io_intrp;
   bool write_block = state.panel_input.io_write && state.panel_input.io_block;
@@ -792,15 +833,14 @@ void DrawInputPanel(core::MachineState& state,
   }
 
   // === CONTROL section (Row 1, right) ===
-  DrawHLine(PanelLayout::kControlLines[0].x1,
-            PanelLayout::kControlLines[0].x2,
-            PanelLayout::kControlLines[0].y, scale, origin, line_color,
-            PanelLayout::kControlLines[0].thickness, draw_list);
+  DrawGroupFrame(PanelLayout::kControlGroup.label,
+                 PanelLayout::kControlGroupLeftX,
+                 PanelLayout::kControlGroupRightX,
+                 PanelLayout::kControlLineY,
+                 PanelLayout::kControlLineBottomY,
+                 scale, origin, line_color,
+                 PanelLayout::kSectionLineThickness, draw_list);
   DrawGroupLabel(PanelLayout::kControlGroup.label, scale, origin, draw_list, dark_text);
-  DrawHLine(PanelLayout::kControlLines[1].x1,
-            PanelLayout::kControlLines[1].x2,
-            PanelLayout::kControlLines[1].y, scale, origin, line_color,
-            PanelLayout::kControlLines[1].thickness, draw_list);
 
   // Draw control buttons with labels above and individual colors
   for (const auto& control : PanelLayout::kControlGroup.controls) {

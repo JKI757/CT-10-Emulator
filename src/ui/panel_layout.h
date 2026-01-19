@@ -112,7 +112,11 @@ struct PanelLayout {
   static constexpr int kRightGroupStepX = kButtonSize + kRightGroupGap;
   static constexpr int kRightPairStepX = kButtonSize + kRightPairGap;
   static constexpr int kRightLabelToToggleY = 25;
-  static constexpr float kRightRowLineYOffset = 5.0f;
+  static constexpr float kGroupLineEdgePad = -15.0f;
+  static constexpr float kGroupLineLabelPad = 10.0f;
+  static constexpr float kGroupLineYOffset = 15.0f;
+  static constexpr float kGroupLineDropFactor = 0.5f;
+  static constexpr float kGroupLineCapLength = 18.0f;
   static constexpr int kLoadGap = 6;
   static constexpr int kLoadButtonCount = 9;
   static constexpr int kLoadTotalWidth =
@@ -493,7 +497,7 @@ struct PanelLayout {
 
   static constexpr int kErrorBypassGroupBaseX = kErrorBypassGroupTopX;
   static constexpr int kErrorBypassGroupBaseY = kErrorBypassGroupTopY;
-  static constexpr int kErrorBypassLabelOffsetX = 0;
+  static constexpr int kErrorBypassLabelOffsetX = 15;
   static constexpr int kErrorBypassLabelOffsetY = kGroupLabelOffsetY * 1.2;
   static constexpr int kErrorBypassLabelX =
       kErrorBypassGroupBaseX + kErrorBypassLabelOffsetX;
@@ -742,24 +746,12 @@ struct PanelLayout {
       }},
   };
 
-  static constexpr float kControlLineYOffset = kRightRowLineYOffset;
-  static constexpr float kControlLineLeftStartOffsetX = -0.0f;
-  static constexpr float kControlLineLeftEndOffsetX = -0.0f;
-  static constexpr float kControlLineRightStartOffsetX = -0.0f;
-  static constexpr float kControlLineRightEndOffsetX = -0.0f;
-  static constexpr float kControlLineY = kControlGroupBaseY + kControlLineYOffset;
-  static constexpr float kControlLineLeftX1 =
-      kControlGroupBaseX + kControlLineLeftStartOffsetX;
-  static constexpr float kControlLineLeftX2 =
-      kControlGroupBaseX + kControlLineLeftEndOffsetX;
-  static constexpr float kControlLineRightX1 =
-      kControlGroupBaseX + kControlLineRightStartOffsetX;
-  static constexpr float kControlLineRightX2 =
-      kControlGroupBaseX + kControlLineRightEndOffsetX;
-  inline static constexpr std::array<HLine, 2> kControlLines = {{
-      {kControlLineLeftX1, kControlLineLeftX2, kControlLineY, kSectionLineThickness},
-      {kControlLineRightX1, kControlLineRightX2, kControlLineY, kSectionLineThickness},
-  }};
+  static constexpr float kControlGroupLeftX = kControlButtonBaseX;
+  static constexpr float kControlGroupRightX =
+      kControlButtonBaseX + kControlStartOffsetX + kControlButtonW;
+  static constexpr float kControlLineY = kControlLabelY + kGroupLineYOffset;
+  static constexpr float kControlLineBottomY =
+      kControlButtonY + kControlButtonH * kGroupLineDropFactor;
 
   // Left side controls - labels drawn separately above
   inline static constexpr ToggleLayout kPower = {"POWER",
@@ -836,24 +828,11 @@ struct PanelLayout {
       }},
   };
 
-  static constexpr float kIoModeLineYOffset = kRightRowLineYOffset;
-  static constexpr float kIoModeLineLeftStartOffsetX = 0.0f;
-  static constexpr float kIoModeLineLeftEndOffsetX = 0.0f;
-  static constexpr float kIoModeLineRightStartOffsetX = 0.0f;
-  static constexpr float kIoModeLineRightEndOffsetX = 0.0f;
-  static constexpr float kIoModeLineY = kIoModeGroupBaseY + kIoModeLineYOffset;
-  static constexpr float kIoModeLineLeftX1 =
-      kIoModeGroupBaseX + kIoModeLineLeftStartOffsetX;
-  static constexpr float kIoModeLineLeftX2 =
-      kIoModeGroupBaseX + kIoModeLineLeftEndOffsetX;
-  static constexpr float kIoModeLineRightX1 =
-      kIoModeGroupBaseX + kIoModeLineRightStartOffsetX;
-  static constexpr float kIoModeLineRightX2 =
-      kIoModeGroupBaseX + kIoModeLineRightEndOffsetX;
-  inline static constexpr std::array<HLine, 2> kIoModeLines = {{
-      {kIoModeLineLeftX1, kIoModeLineLeftX2, kIoModeLineY, kSectionLineThickness},
-      {kIoModeLineRightX1, kIoModeLineRightX2, kIoModeLineY, kSectionLineThickness},
-  }};
+  static constexpr float kIoModeGroupLeftX = kIoModeX0;
+  static constexpr float kIoModeGroupRightX = kIoModeX0 + kIoModeStep * 2 + kToggleW;
+  static constexpr float kIoModeLineY = kIoModeLabelY + kGroupLineYOffset;
+  static constexpr float kIoModeLineBottomY =
+      kIoModeY + kToggleH * kGroupLineDropFactor;
 
   // MODE - Row 2 (includes RPT/SINGLE).
   inline static constexpr ToggleGroupLayout<6> kModeGroup = {
@@ -873,24 +852,17 @@ struct PanelLayout {
       }},
   };
 
-  static constexpr float kModeLineYOffset = kRightRowLineYOffset;
-  static constexpr float kModeLineLeftStartOffsetX = 0.0f;
-  static constexpr float kModeLineLeftEndOffsetX = 5.0f;
-  static constexpr float kModeLineRightStartOffsetX = 0.0f;
-  static constexpr float kModeLineRightEndOffsetX = 0.0f;
-  static constexpr float kModeLineY = kModeGroupBaseY + kModeLineYOffset;
-  static constexpr float kModeLineLeftX1 =
-      kModeGroupBaseX + kModeLineLeftStartOffsetX;
-  static constexpr float kModeLineLeftX2 =
-      kModeGroupBaseX + kModeLineLeftEndOffsetX;
-  static constexpr float kModeLineRightX1 =
-      kModeGroupBaseX + kModeLineRightStartOffsetX;
-  static constexpr float kModeLineRightX2 =
-      kModeGroupBaseX + kModeLineRightEndOffsetX;
-  inline static constexpr std::array<HLine, 2> kModeLines = {{
-      {kModeLineLeftX1, kModeLineLeftX2, kModeLineY, kSectionLineThickness},
-      {kModeLineRightX1, kModeLineRightX2, kModeLineY, kSectionLineThickness},
-  }};
+  static constexpr float kModeGroupLeftX =
+      (kModeRptSenseBaseX < kModeX0) ? kModeRptSenseBaseX : kModeX0;
+  static constexpr float kModeGroupRightX =
+      (kModeRptSenseBaseX + kRightPairStepX + kToggleW >
+       kModeX0 + kModeStep * 3 + kToggleW)
+          ? (kModeRptSenseBaseX + kRightPairStepX + kToggleW)
+          : (kModeX0 + kModeStep * 3 + kToggleW);
+  static constexpr float kModeLineY = kModeLabelY + kGroupLineYOffset;
+  static constexpr float kModeLineBottomY =
+      ((kModeRptSenseBaseY > kModeY) ? kModeRptSenseBaseY : kModeY) +
+      kToggleH * kGroupLineDropFactor;
 
   // ERROR BYPASS - Row 5, left side
   inline static constexpr ToggleGroupLayout<3> kErrorBypassGroup = {
@@ -906,27 +878,12 @@ struct PanelLayout {
       }},
   };
 
-  static constexpr float kErrorBypassLineYOffset = kRightRowLineYOffset;
-  static constexpr float kErrorBypassLineLeftStartOffsetX = 0.0f;
-  static constexpr float kErrorBypassLineLeftEndOffsetX = 0.0f;
-  static constexpr float kErrorBypassLineRightStartOffsetX = 00.0f;
-  static constexpr float kErrorBypassLineRightEndOffsetX = 0.0f;
-  static constexpr float kErrorBypassLineY =
-      kErrorBypassGroupBaseY + kErrorBypassLineYOffset;
-  static constexpr float kErrorBypassLineLeftX1 =
-      kErrorBypassGroupBaseX + kErrorBypassLineLeftStartOffsetX;
-  static constexpr float kErrorBypassLineLeftX2 =
-      kErrorBypassGroupBaseX + kErrorBypassLineLeftEndOffsetX;
-  static constexpr float kErrorBypassLineRightX1 =
-      kErrorBypassGroupBaseX + kErrorBypassLineRightStartOffsetX;
-  static constexpr float kErrorBypassLineRightX2 =
-      kErrorBypassGroupBaseX + kErrorBypassLineRightEndOffsetX;
-  inline static constexpr std::array<HLine, 2> kErrorBypassLines = {{
-      {kErrorBypassLineLeftX1, kErrorBypassLineLeftX2,
-       kErrorBypassLineY, kSectionLineThickness},
-      {kErrorBypassLineRightX1, kErrorBypassLineRightX2,
-       kErrorBypassLineY, kSectionLineThickness},
-  }};
+  static constexpr float kErrorBypassGroupLeftX = kErrorBypassX0;
+  static constexpr float kErrorBypassGroupRightX =
+      kErrorBypassX0 + kErrorBypassStep * 2 + kToggleW;
+  static constexpr float kErrorBypassLineY = kErrorBypassLabelY + kGroupLineYOffset;
+  static constexpr float kErrorBypassLineBottomY =
+      kErrorBypassY + kToggleH * kGroupLineDropFactor;
 
   // I/O (READ/INTRPT, WRITE/BLOCK) - Row 5, right side
   inline static constexpr ToggleGroupLayout<2> kIoGroup = {
@@ -939,6 +896,12 @@ struct PanelLayout {
                      kToggleW, kToggleH}},
       }},
   };
+
+  static constexpr float kIoGroupLeftX = kIoColBaseX;
+  static constexpr float kIoGroupRightX = kIoColBaseX + kIoColOffsetX + kToggleW;
+  static constexpr float kIoLineY = kIoLabelY + kGroupLineYOffset;
+  static constexpr float kIoLineBottomY =
+      kIoRowBaseY + kToggleH * kGroupLineDropFactor;
 
   // Register load buttons at bottom
   inline static constexpr ButtonGroupLayout<9> kRegisterLoadGroup = {
