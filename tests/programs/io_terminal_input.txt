@@ -1,0 +1,11 @@
+# Terminal input (device 1)
+# Note: set I/O Mode to OCTAL/HEX/ALPHA (not REXMT) and send "AB" in the Terminal panel first.
+# START 0x000
+OCD 01  # Select terminal device 1
+LCI 01  # Countdown = 1 => 2 bytes
+RDB 40  # Read block into M[0x40..0x41]
+BST 00  # After: HALT
+@40
+00 00
+# EXPECT 0x40 0x41
+# EXPECT 0x41 0x42

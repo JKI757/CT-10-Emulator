@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+#include <cctype>
 #include <cstdlib>
 #include <sstream>
 #include <string>
@@ -31,6 +33,64 @@ struct ProgramSpec {
   std::vector<Expectation> expects;
 };
 
+enum class AsmAddressing {
+  Immediate,
+  Paged,
+};
+
+struct AssemblerOp {
+  std::string_view mnemonic;
+  uint8_t opcode;
+  AsmAddressing addressing;
+};
+
+inline constexpr std::array<AssemblerOp, 44> kAssemblerOps = {{
+    {"SST", 0x00, AsmAddressing::Immediate},
+    {"LCI", 0x01, AsmAddressing::Immediate},
+    {"LAI", 0x02, AsmAddressing::Immediate},
+    {"INX", 0x03, AsmAddressing::Immediate},
+    {"SKI", 0x08, AsmAddressing::Immediate},
+    {"SKS", 0x09, AsmAddressing::Immediate},
+    {"SKF", 0x0A, AsmAddressing::Immediate},
+    {"SLA", 0x0B, AsmAddressing::Immediate},
+    {"SRA", 0x10, AsmAddressing::Immediate},
+    {"OCD", 0x11, AsmAddressing::Immediate},
+    {"LXI", 0x12, AsmAddressing::Immediate},
+    {"SLL", 0x13, AsmAddressing::Immediate},
+    {"SRL", 0x18, AsmAddressing::Immediate},
+    {"AND", 0x19, AsmAddressing::Immediate},
+    {"IOR", 0x1A, AsmAddressing::Immediate},
+    {"XOR", 0x1B, AsmAddressing::Immediate},
+    {"FLC", 0x28, AsmAddressing::Immediate},
+    {"FLS", 0xF8, AsmAddressing::Immediate},
+    {"LDA", 0x20, AsmAddressing::Paged},
+    {"LCC", 0x30, AsmAddressing::Paged},
+    {"LAN", 0x38, AsmAddressing::Paged},
+    {"LDQ", 0x40, AsmAddressing::Paged},
+    {"STA", 0x48, AsmAddressing::Paged},
+    {"STX", 0x50, AsmAddressing::Paged},
+    {"STQ", 0x58, AsmAddressing::Paged},
+    {"ADD", 0x60, AsmAddressing::Paged},
+    {"SUB", 0x68, AsmAddressing::Paged},
+    {"MPY", 0x70, AsmAddressing::Paged},
+    {"DIV", 0x78, AsmAddressing::Paged},
+    {"RAO", 0x80, AsmAddressing::Paged},
+    {"RSO", 0x88, AsmAddressing::Paged},
+    {"BUN", 0x90, AsmAddressing::Paged},
+    {"BST", 0x98, AsmAddressing::Paged},
+    {"BSB", 0xA0, AsmAddressing::Paged},
+    {"BPS", 0xA8, AsmAddressing::Paged},
+    {"BZE", 0xB0, AsmAddressing::Paged},
+    {"BNG", 0xB8, AsmAddressing::Paged},
+    {"BNC", 0xC0, AsmAddressing::Paged},
+    {"BXZ", 0xC8, AsmAddressing::Paged},
+    {"WDB", 0xD0, AsmAddressing::Paged},
+    {"MNO", 0xD8, AsmAddressing::Paged},
+    {"RDB", 0xE0, AsmAddressing::Paged},
+    {"RDI", 0xE8, AsmAddressing::Paged},
+    {"MNI", 0xF0, AsmAddressing::Paged},
+}};
+
 inline bool ParseHexToken(const std::string& token,
                           uint16_t& value,
                           bool byte_only) {
@@ -55,6 +115,57 @@ inline bool ParseHexToken(const std::string& token,
   }
   value = static_cast<uint16_t>(parsed);
   return true;
+}
+
+inline char ToUpperChar(char c) {
+  return static_cast<char>(std::toupper(static_cast<unsigned char>(c)));
+}
+
+inline std::string ToUpperToken(std::string_view token) {
+  std::string upper;
+  upper.reserve(token.size());
+  for (char c : token) {
+    upper.push_back(ToUpperChar(c));
+  }
+  return upper;
+}
+
+inline bool IsIndexToken(std::string_view token) {
+  return token.size() == 1 &&
+         (token[0] == 'X' || token[0] == 'x');
+}
+
+inline const AssemblerOp* FindAssemblerOp(std::string_view token) {
+  std::string upper = ToUpperToken(token);
+  for (const auto& op : kAssemblerOps) {
+    if (upper == op.mnemonic) {
+      return &op;
+    }
+  }
+  return nullptr;
+}
+
+inline bool IsSeparator(char c) {
+  return c == ' ' || c == '\t' || c == ',' || c == ';' || c == ':' || c == '.';
+}
+
+inline std::vector<std::string> TokenizeLine(std::string_view line) {
+  std::vector<std::string> tokens;
+  std::string token;
+  for (char c : line) {
+    if (IsSeparator(c)) {
+      if (!token.empty()) {
+        tokens.push_back(token);
+        token.clear();
+      }
+      continue;
+    }
+    token.push_back(c);
+  }
+  if (!token.empty()) {
+    tokens.push_back(token);
+  }
+  return tokens;
 }
 
 inline std::string SanitizeProgramText(std::string_view text) {
@@ -175,15 +286,94 @@ inline void ParseProgramContent(std::string_view text,
       }
     }
 
-    for (char& c : code) {
-      if (c == ',' || c == ';' || c == ':') {
-        c = ' ';
+    std::vector<std::string> tokens = TokenizeLine(code);
+    if (tokens.empty()) {
+      continue;
+    }
+
+    const AssemblerOp* op = nullptr;
+    int mnemonic_index = -1;
+    for (int i = 0; i < static_cast<int>(tokens.size()); ++i) {
+      op = FindAssemblerOp(tokens[i]);
+      if (op) {
+        mnemonic_index = i;
+        break;
       }
     }
 
-    std::istringstream tokens(code);
-    std::string token;
-    while (tokens >> token) {
+    if (op) {
+      for (const auto& token : tokens) {
+        if (!token.empty() && token.front() == '@') {
+          uint16_t addr = 0;
+          if (ParseHexToken(token.substr(1), addr, false)) {
+            cursor = static_cast<uint16_t>(addr & 0x3FF);
+            cursor_set = true;
+            spec.uses_addresses = true;
+            if (!spec.has_entry && spec.writes.empty()) {
+              spec.entry = cursor;
+              spec.has_entry = true;
+            }
+          } else {
+            ++result.skipped;
+          }
+        }
+      }
+
+      int operand_index = mnemonic_index + 1;
+      bool indexed = false;
+      if (operand_index < static_cast<int>(tokens.size()) &&
+          IsIndexToken(tokens[operand_index])) {
+        indexed = true;
+        ++operand_index;
+      }
+
+      if (operand_index >= static_cast<int>(tokens.size())) {
+        ++result.skipped;
+        continue;
+      }
+
+      uint16_t operand = 0;
+      if (!ParseHexToken(tokens[operand_index], operand, false)) {
+        ++result.skipped;
+        continue;
+      }
+
+      if (!indexed && operand_index + 1 < static_cast<int>(tokens.size()) &&
+          IsIndexToken(tokens[operand_index + 1])) {
+        indexed = true;
+      }
+
+      uint8_t opcode = 0;
+      uint8_t immediate = static_cast<uint8_t>(operand & 0xFF);
+
+      if (op->addressing == AsmAddressing::Immediate) {
+        if (indexed || operand > 0xFF) {
+          ++result.skipped;
+          continue;
+        }
+        opcode = op->opcode;
+      } else {
+        if (operand > 0x3FF) {
+          ++result.skipped;
+          continue;
+        }
+        uint8_t page = static_cast<uint8_t>((operand >> 8) & 0x03);
+        opcode = static_cast<uint8_t>(op->opcode | page |
+                                      (indexed ? 0x04u : 0x00u));
+      }
+
+      if (!cursor_set) {
+        cursor_set = true;
+      }
+      spec.writes.push_back({cursor, opcode});
+      cursor = static_cast<uint16_t>((cursor + 1) & 0x3FF);
+      spec.writes.push_back({cursor, immediate});
+      cursor = static_cast<uint16_t>((cursor + 1) & 0x3FF);
+      result.parsed += 2;
+      continue;
+    }
+
+    for (const auto& token : tokens) {
       if (!token.empty() && token.front() == '@') {
         uint16_t addr = 0;
         if (ParseHexToken(token.substr(1), addr, false)) {

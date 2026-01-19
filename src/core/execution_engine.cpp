@@ -174,7 +174,7 @@ void BeginTransfer(MachineState& state, IoTransferMode mode) {
 }
 
 void HandleIo(MachineState& state) {
-  if (state.panel_input.io_mode == 1) {
+  if (state.panel_input.io_mode == 3) {
     state.io.status = BuildStatusByte(state);
     return;
   }
@@ -250,20 +250,17 @@ void ExecutionEngine::Step(MachineState& state) const {
   }
 
   switch (state.panel_input.io_mode) {
-    case 2:
+    case 1:
       state.io.hex_mode = true;
       state.io.alpha_mode = false;
       break;
-    case 3:
+    case 2:
       state.io.hex_mode = false;
       state.io.alpha_mode = true;
       break;
-    case 1:
+    default:
       state.io.hex_mode = false;
       state.io.alpha_mode = false;
-      break;
-    case 0:
-    default:
       break;
   }
 

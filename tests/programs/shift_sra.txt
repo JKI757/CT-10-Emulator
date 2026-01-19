@@ -1,0 +1,12 @@
+# Shift right arithmetic (A:Q >> 4, sign-extended)
+# START 0x000
+LDA 20  # After: A=0xF0
+LDQ 21  # After: Q=0x00
+SRA 04  # After: A=0xFF, Q=0x00
+STA 22  # After: M[0x22]=0xFF
+STQ 23  # After: M[0x23]=0x00
+BST 00  # After: HALT
+@20
+F0 00 00 00
+# EXPECT 0x22 0xFF
+# EXPECT 0x23 0x00

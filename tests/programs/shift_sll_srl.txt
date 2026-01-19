@@ -1,0 +1,13 @@
+# Logical shifts on accumulator
+# START 0x000
+LAI 12  # After: A=0x12
+SLL 02  # After: A=0x48
+STA 20  # After: M[0x20]=0x48
+LAI 80  # After: A=0x80
+SRL 01  # After: A=0x40
+STA 21  # After: M[0x21]=0x40
+BST 00  # After: HALT
+@20
+00 00
+# EXPECT 0x20 0x48
+# EXPECT 0x21 0x40

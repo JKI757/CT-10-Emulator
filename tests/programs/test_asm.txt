@@ -1,0 +1,11 @@
+# CT-10 golden program (assembly): y = 2x + 5 - z
+# START 0x000
+LDA 20
+ADD 20
+ADD 23
+SUB 22
+STA 21
+BST 00
+@20
+04 00 01 05
+# EXPECT 0x21 0x0C

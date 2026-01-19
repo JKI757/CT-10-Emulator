@@ -1,0 +1,9 @@
+# Indexed load: result = memory[base + X]
+# START 0x000
+LXI 02    # After: X=0x02
+LDA,x 20  # After: A=M[0x22]=0x7A
+STA 23    # After: M[0x23]=0x7A
+BST 00    # After: HALT
+@20
+11 22 7A 00
+# EXPECT 0x23 0x7A

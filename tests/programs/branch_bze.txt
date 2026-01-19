@@ -1,0 +1,12 @@
+# Branch on zero: choose between two loads
+# START 0x000
+LDA 20  # After: A=0x00, Z=1
+BZE 08  # After: branch to 0x08 if Z set
+LDA 21  # After: skipped if branch taken
+BUN 0A  # After: jump to store if branch not taken
+LDA 22  # After: A=0x22
+STA 23  # After: M[0x23]=0x22
+BST 00  # After: HALT
+@20
+00 11 22 00
+# EXPECT 0x23 0x22

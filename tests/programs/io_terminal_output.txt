@@ -1,0 +1,10 @@
+# Terminal output (device 1)
+# Note: set I/O Mode to OCTAL/HEX/ALPHA (not REXMT) for transfer.
+# START 0x000
+OCD 01  # Select terminal device 1
+LCI 02  # Countdown = 2 => 3 bytes
+WDB 30  # Write block from M[0x30..0x32] to terminal output
+BST 00  # After: HALT
+@30
+48 49 0A
+# Expected terminal output bytes: 0x48 0x49 0x0A ("HI\n")

@@ -1,0 +1,12 @@
+# Divide two numbers: quotient = dividend / divisor, remainder = dividend % divisor
+# START 0x000
+LDA 20  # After: A=0x00 (high byte of dividend)
+LDQ 21  # After: Q=0x64 (low byte of dividend => 0x0064)
+DIV 22  # After: Q=0x0E (quotient), A=0x02 (remainder)
+STA 23  # After: M[0x23]=0x02 (remainder)
+STQ 24  # After: M[0x24]=0x0E (quotient)
+BST 00  # After: HALT
+@20
+00 64 07 00 00
+# EXPECT 0x23 0x02
+# EXPECT 0x24 0x0E

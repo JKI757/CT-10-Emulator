@@ -1,0 +1,11 @@
+# Multiply two numbers: product = x * y
+# START 0x000
+LDA 20  # After: A=0x0C
+MPY 21  # After: A=0x00, Q=0x24 (0x0C * 0x03 = 0x0024)
+STA 22  # After: M[0x22]=0x00 (high byte)
+STQ 23  # After: M[0x23]=0x24 (low byte)
+BST 00  # After: HALT
+@20
+0C 03 00 00
+# EXPECT 0x22 0x00
+# EXPECT 0x23 0x24

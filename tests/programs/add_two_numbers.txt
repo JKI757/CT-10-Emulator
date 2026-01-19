@@ -1,0 +1,9 @@
+# Add two numbers: result = x + y
+# START 0x000
+LDA 20  # After: A=0x03
+ADD 21  # After: A=0x08
+STA 22  # After: M[0x22]=0x08
+BST 00  # After: HALT
+@20
+03 05 00
+# EXPECT 0x22 0x08

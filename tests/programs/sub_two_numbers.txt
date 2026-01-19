@@ -1,0 +1,9 @@
+# Subtract two numbers: result = x - y
+# START 0x000
+LDA 20  # After: A=0x09
+SUB 21  # After: A=0x07
+STA 22  # After: M[0x22]=0x07
+BST 00  # After: HALT
+@20
+09 02 00
+# EXPECT 0x22 0x07

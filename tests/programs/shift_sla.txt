@@ -1,0 +1,12 @@
+# Shift left arithmetic (A:Q << 1)
+# START 0x000
+LDA 20  # After: A=0x12
+LDQ 21  # After: Q=0x34
+SLA 01  # After: A=0x24, Q=0x68
+STA 22  # After: M[0x22]=0x24
+STQ 23  # After: M[0x23]=0x68
+BST 00  # After: HALT
+@20
+12 34 00 00
+# EXPECT 0x22 0x24
+# EXPECT 0x23 0x68

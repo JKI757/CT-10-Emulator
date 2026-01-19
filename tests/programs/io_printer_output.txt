@@ -1,0 +1,10 @@
+# Printer output (device 2)
+# Note: set I/O Mode to OCTAL/HEX/ALPHA (not REXMT) for transfer.
+# START 0x000
+OCD 02  # Select printer device 2
+LCI 02  # Countdown = 2 => 3 bytes
+WDB 30  # Write block from M[0x30..0x32] to printer output
+BST 00  # After: HALT
+@30
+4F 4B 0A
+# Expected printer output bytes: 0x4F 0x4B 0x0A ("OK\n")

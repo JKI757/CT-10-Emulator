@@ -358,7 +358,9 @@ void DrawProgramEditor(core::MachineState& state,
 
   ImGui::InputTextMultiline("##program_text", program_text,
                             sizeof(program_text), ImVec2(-1.0f, 190.0f));
-  ImGui::TextDisabled("Directives: @ADDR, # START <addr>, # EXPECT <addr> <val>");
+  ImGui::TextDisabled(
+      "Directives: @ADDR, # START <addr>, # EXPECT <addr> <val>. "
+      "Assembly: MNEMONIC [X] <operand>.");
 
   if (ImGui::Button("Load Program")) {
     app::ProgramSpec spec;

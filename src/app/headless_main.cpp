@@ -107,19 +107,23 @@ bool LoadExpectedHexFile(const std::string& path,
 
 bool ParseIoMode(const char* text, uint8_t& mode) {
   if (std::strcmp(text, "rexmt") == 0) {
-    mode = 0;
+    mode = 3;
     return true;
   }
   if (std::strcmp(text, "off") == 0) {
-    mode = 1;
+    mode = 0;
+    return true;
+  }
+  if (std::strcmp(text, "octal") == 0) {
+    mode = 0;
     return true;
   }
   if (std::strcmp(text, "hex") == 0) {
-    mode = 2;
+    mode = 1;
     return true;
   }
   if (std::strcmp(text, "alpha") == 0) {
-    mode = 3;
+    mode = 2;
     return true;
   }
   return false;

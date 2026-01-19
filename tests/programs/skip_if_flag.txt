@@ -1,0 +1,11 @@
+# Skip-if-flag: skip an ADD when FLAG is set
+# START 0x000
+LDA 20  # After: A=0x05
+FLS 00  # After: FLAG=1
+SKF 01  # After: skips next instruction if FLAG set
+ADD 21  # After: skipped (A stays 0x05)
+STA 22  # After: M[0x22]=0x05
+BST 00  # After: HALT
+@20
+05 09 00
+# EXPECT 0x22 0x05
